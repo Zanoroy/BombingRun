@@ -3,7 +3,8 @@
 **Project Start Date:** 3 January 2026  
 **Estimated Timeline:** 5-6 months  
 **Platform:** C++ (Linux/Windows)  
-**Graphics Library:** SDL2 (selected 3 Jan 2026)
+**Graphics Library:** SDL2 (selected 3 Jan 2026)  
+**View Perspective:** Top-Down 2D
 
 ---
 
@@ -28,7 +29,7 @@
 ---
 
 ## **Phase 2: Basic Objects & Rendering** (Weeks 3-4)
-**Status:** In Progress  
+**Status:** Completed ✅  
 **Target Completion:** Week 4
 
 ### Tasks:
@@ -48,17 +49,17 @@
 ---
 
 ## **Phase 3: Bomber Aircraft System** (Weeks 5-6)
-**Status:** Not Started  
+**Status:** In Progress  
 **Target Completion:** Week 6
 
 ### Tasks:
-- [ ] Create `Bomber` class with properties (position, type, speed)
-- [ ] Implement bomber spawning system
-- [ ] Add movement patterns (spawn → target → exit)
-- [ ] Build multi-hit health system (3 hits)
-- [ ] Add visual damage indicators (color changes)
-- [ ] Implement smoke effects for damaged bombers
-- [ ] Create aircraft manager for lifecycle
+- [x] Create `Bomber` class with properties (position, type, speed)
+- [x] Implement bomber spawning system
+- [x] Add movement patterns (spawn → target → exit)
+- [x] Build multi-hit health system (3 hits)
+- [x] Add visual damage indicators (color changes)
+- [x] Implement smoke effects for damaged bombers
+- [x] Create aircraft manager for lifecycle
 
 ### Deliverables:
 - Functional bomber aircraft

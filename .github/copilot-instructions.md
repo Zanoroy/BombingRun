@@ -3,18 +3,22 @@
 ## Project Overview
 **Project Name:** Bombing Run  
 **Type:** 2D Aerial Combat Strategy Game  
+**View Perspective:** Top-Down 2D  
 **Language:** C++  
 **Platform:** Cross-platform (Linux/Windows)  
-**Current Phase:** Phase 1 - Foundation & Core Infrastructure  
+**Current Phase:** Phase 3 - Bomber Aircraft System  
 **Project Start:** 3 January 2026
 
 ## Project Context
 
 ### Core Architecture
+- **View Perspective:** Top-Down 2D (bird's eye view of battlefield)
 - **Design Pattern:** Object-oriented with self-contained objects
 - **Extensibility:** Designed for future expansion of weapons, bombs, and targets
-- **Graphics:** 2D sprite-based rendering
+- **Graphics:** 2D sprite-based rendering from above
 - **Coordinate System:** Standard 2D canvas with origin at top-left
+- **Map Resolution:** Standard map is 1000x600 pixels
+- **Sprite Scaling:** All sprites scale proportionally to map size
 - **Target Performance:** 60 FPS
 
 ### Key Game Mechanics
@@ -125,8 +129,8 @@ BombingRun/
 ```
 
 ### Current Development Status
-- **Active Phase:** Phase 2 - Basic Objects & Rendering
-- **Next Steps:** Create base GameObject class, implement sprite loading system, add texture manager
+- **Active Phase:** Phase 3 - Bomber Aircraft System
+- **Next Steps:** Create Bomber class, implement spawning system, add movement patterns and health
 - **Blockers:** None
 
 ### Build & Run Information
@@ -137,12 +141,13 @@ BombingRun/
 - **Run Command:** `cd /home/nightcoder/Projects/BombingRun && build/bin/BombingRun`
 
 ### Important Reminders for AI
-1. **Sprite-based:** All visual elements should support sprite swapping for customization
-2. **Extensibility:** Design for easy addition of new weapons, bombs, and targets
-3. **Cross-platform:** Code must compile and run on both Linux and Windows
-4. **Self-contained Objects:** Each object should manage its own state and behavior
-5. **Map Independence:** Each map is a separate "level" that can be selected
-6. **Ground Destruction:** Ground base damage affects vehicle movement (pathfinding consideration)
+1. **Top-Down View:** All game elements viewed from above (bird's eye perspective)
+2. **Sprite-based:** All visual elements should support sprite swapping for customization
+3. **Extensibility:** Design for easy addition of new weapons, bombs, and targets
+4. **Cross-platform:** Code must compile and run on both Linux and Windows
+5. **Self-contained Objects:** Each object should manage its own state and behavior
+6. **Map Independence:** Each map is a separate "level" that can be selected
+7. **Ground Destruction:** Ground base damage affects vehicle movement (pathfinding consideration)
 
 ### Key References
 - **Main Specification:** `Bombing Run Game Specification.md`
@@ -165,9 +170,11 @@ BombingRun/
 ### Common Patterns in This Project
 
 #### Scaling System
+- Standard Map Resolution: 1000x600 pixels
 - City Map: 1.0x scale (standard)
 - BattleGround Map: 0.25x scale (4x zoom out)
 - All coordinates and sizes must scale proportionally
+- All sprites scale proportionally to map size
 
 #### Multi-hit Damage System
 - Track hit count per entity

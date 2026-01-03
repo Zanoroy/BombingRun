@@ -1,9 +1,11 @@
 # Bombing Run
 
-A 2D aerial combat strategy game built with C++ and SDL2.
+A 2D top-down aerial combat strategy game built with C++ and SDL2.
+
+**View Perspective:** Bird's eye view (top-down 2D)
 
 ## Project Status
-**Phase 1: Foundation & Core Infrastructure** (In Progress)
+**Phase 3: Bomber Aircraft System** (In Progress)
 
 See [Development-Phases.md](Development-Phases.md) for full development roadmap.
 
@@ -71,5 +73,6 @@ MIT License - See LICENSE file for details
 
 ## Development
 Started: 3 January 2026  
+View: Top-Down 2D (bird's eye perspective)  
 Target: 60 FPS 2D aerial combat game  
 Platform: Cross-platform (Linux/Windows)

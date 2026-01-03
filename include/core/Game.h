@@ -4,7 +4,12 @@
 #include <memory>
 #include <string>
 #include "systems/TextureManager.h"
+#include "systems/AircraftManager.h"
+#include "systems/WeaponManager.h"
+#include "systems/ExplosionManager.h"
+#include "maps/Map.h"
 #include "utils/PerformanceMonitor.h"
+#include "entities/Bomb.h"
 
 namespace BombingRun {
 
@@ -72,6 +77,13 @@ private:
     int m_windowWidth;
     int m_windowHeight;
     PerformanceMonitor m_perfMonitor;
+    AircraftManager m_aircraftManager;
+    WeaponManager m_weaponManager;
+    ExplosionManager m_explosionManager;
+    std::unique_ptr<Map> m_currentMap;
+    BombType m_selectedBombType;  // Currently selected bomb type
+    int m_mouseX;                  // Current mouse X position
+    int m_mouseY;                  // Current mouse Y position
 
     // Target frame time for 60 FPS (16.67ms)
     static constexpr Uint32 TARGET_FRAME_TIME = 16;

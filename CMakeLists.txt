@@ -29,8 +29,14 @@ set(SOURCES
     src/core/Game.cpp
     src/core/GameState.cpp
     src/entities/GameObject.cpp
+    src/entities/Bomber.cpp
+    src/entities/Bomb.cpp
     src/systems/TextureManager.cpp
     src/systems/CollisionDetector.cpp
+    src/systems/AircraftManager.cpp
+    src/systems/WeaponManager.cpp
+    src/systems/ExplosionManager.cpp
+    src/maps/Map.cpp
     src/utils/PerformanceMonitor.cpp
 )
 
