@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include "systems/BuildingManager.h"
 
 namespace BombingRun {
 
@@ -100,6 +101,11 @@ public:
      */
     float getGroundY() const { return m_height * 0.66f; }
 
+    /**
+     * @brief Get building manager
+     */
+    BuildingManager& getBuildingManager() { return m_buildingManager; }
+
 private:
     void createMap1();  // City map with roads, houses, river, etc.
     void addRoad(int x, int y, int width, int height, bool horizontal);
@@ -115,6 +121,7 @@ private:
     int m_destroyedBuildings;
     std::vector<std::unique_ptr<MapObject>> m_objects;
     SDL_Color m_grassColor;
+    BuildingManager m_buildingManager;
 };
 
 } // namespace BombingRun

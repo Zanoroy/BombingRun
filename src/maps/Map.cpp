@@ -17,9 +17,23 @@ bool Map::loadMap(const std::string& mapName) {
     std::cout << "Loading map: " << mapName << std::endl;
     
     m_objects.clear();
+    m_buildingManager.clear();
     
     if (mapName == "map1") {
         createMap1();
+        // Generate civilian buildings for City map
+        m_buildingManager.generateCityBuildings(m_width, m_height, 50);
+        std::cout << "Generated " << m_buildingManager.getActiveCount() << " buildings" << std::endl;
+        return true;
+    } else if (mapName == "battleground") {
+        // BattleGround map with military base
+        m_grassColor = {100, 120, 80, 255};  // Darker military green
+        Runway* runway = m_buildingManager.generateMilitaryBase(m_width, m_height);
+        std::cout << "Generated military base with runway and " 
+                  << m_buildingManager.getActiveCount() << " military buildings" << std::endl;
+        if (runway) {
+            std::cout << "Runway health: " << runway->getHealth() << " / " << runway->getMaxHealth() << std::endl;
+        }
         return true;
     }
     
@@ -33,7 +47,10 @@ void Map::render(SDL_Renderer* renderer) {
     SDL_Rect grassRect = {0, 0, m_width, m_height};
     SDL_RenderFillRect(renderer, &grassRect);
     
-    // Render all map objects
+    // Render buildings first (beneath roads)
+    m_buildingManager.render(renderer);
+    
+    // Render all map objects (roads, rivers, etc.)
     for (const auto& obj : m_objects) {
         // Skip destroyed buildings
         if (obj->destructible && obj->health <= 0) {
@@ -92,6 +109,10 @@ MapObject* Map::checkCollision(float x, float y) {
 int Map::damageBuildings(float x, float y, float radius, int damage) {
     int destroyed = 0;
     
+    // Use BuildingManager for collision detection
+    destroyed += m_buildingManager.checkCollision(x, y, radius, damage);
+    
+    // Also check old map objects for backwards compatibility
     for (auto& obj : m_objects) {
         // Only damage destructible buildings that aren't already destroyed
         if (!obj->destructible || obj->health <= 0) {

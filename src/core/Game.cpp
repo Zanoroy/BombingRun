@@ -14,6 +14,7 @@ Game::Game()
     , m_selectedBombType(BombType::BOMB_500LB)  // Default to 500lb
     , m_mouseX(0)
     , m_mouseY(0)
+    , m_font(nullptr)
 {
 }
 
@@ -25,6 +26,13 @@ bool Game::initialize(const std::string& title, int width, int height) {
     // Initialize SDL2
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
         std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+        return false;
+    }
+
+    // Initialize SDL_ttf
+    if (TTF_Init() != 0) {
+        std::cerr << "TTF_Init Error: " << TTF_GetError() << std::endl;
+        SDL_Quit();
         return false;
     }
 
@@ -88,10 +96,21 @@ bool Game::initialize(const std::string& title, int width, int height) {
         std::cerr << "Warning: Failed to load aircraft sprites, using fallback rendering" << std::endl;
     }
 
+    // Try to load a default font (will use fallback text rendering if it fails)
+    m_font = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16);
+    if (!m_font) {
+        std::cerr << "Warning: Failed to load font, using fallback: " << TTF_GetError() << std::endl;
+        // Try alternative font path
+        m_font = TTF_OpenFont("/usr/share/fonts/TTF/DejaVuSans.ttf", 16);
+        if (!m_font) {
+            std::cerr << "Warning: Using no font - text rendering disabled" << std::endl;
+        }
+    }
+
     // Create and load map
     m_currentMap = std::make_unique<Map>(width, height);
-    if (!m_currentMap->loadMap("map1")) {
-        std::cerr << "Failed to load map1" << std::endl;
+    if (!m_currentMap->loadMap("battleground")) {
+        std::cerr << "Failed to load battleground map" << std::endl;
         return false;
     }
 
@@ -212,18 +231,20 @@ void Game::update(float deltaTime) {
             float bombX = bomb->getX();
             float bombY = bomb->getY();
             int craterSize = bomb->getCraterSize();
+            // Scale crater and explosion by 0.25x for BattleGround map (4x larger map)
+            float scaledCraterSize = craterSize * 0.25f;
             int damage = bomb->getDamage();
             
             // Create explosion and crater
             m_explosionManager.createExplosion(
                 bombX, 
                 bombY, 
-                craterSize * 2  // Explosion is larger than crater
+                static_cast<int>(scaledCraterSize * 2)  // Explosion is larger than crater
             );
             m_explosionManager.createCrater(
                 bombX,
                 bombY,
-                craterSize
+                static_cast<int>(scaledCraterSize)
             );
             
             // Damage buildings within explosion radius
@@ -291,6 +312,8 @@ void Game::render() {
     
     // Render targeting circle (on top of everything)
     int targetRadius = Bomb::getConfig(m_selectedBombType).targetRadius;
+    // Scale target circle by 0.25x for BattleGround map (4x larger map)
+    float scaledRadius = targetRadius * 0.25f;
     SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(m_renderer, 255, 255, 0, 100);  // Yellow with transparency
     
@@ -300,10 +323,10 @@ void Game::render() {
         float angle1 = (i * 2.0f * M_PI) / segments;
         float angle2 = ((i + 1) * 2.0f * M_PI) / segments;
         
-        int x1 = m_mouseX + static_cast<int>(targetRadius * cos(angle1));
-        int y1 = m_mouseY + static_cast<int>(targetRadius * sin(angle1));
-        int x2 = m_mouseX + static_cast<int>(targetRadius * cos(angle2));
-        int y2 = m_mouseY + static_cast<int>(targetRadius * sin(angle2));
+        int x1 = m_mouseX + static_cast<int>(scaledRadius * cos(angle1));
+        int y1 = m_mouseY + static_cast<int>(scaledRadius * sin(angle1));
+        int x2 = m_mouseX + static_cast<int>(scaledRadius * cos(angle2));
+        int y2 = m_mouseY + static_cast<int>(scaledRadius * sin(angle2));
         
         SDL_RenderDrawLine(m_renderer, x1, y1, x2, y2);
     }
@@ -315,11 +338,101 @@ void Game::render() {
     
     SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_NONE);
     
+    // Draw bomb selection indicator near mouse cursor
+    if (m_font) {
+        const char* bombNames[] = {
+            "100lb",
+            "250lb", 
+            "500lb",
+            "1000lb",
+            "2000lb",
+            "4000lb",
+            "8000lb"
+        };
+        
+        std::string indicatorText = bombNames[static_cast<int>(m_selectedBombType)];
+        indicatorText += " (";
+        indicatorText += std::to_string(m_weaponManager.getRemainingBombs(m_selectedBombType));
+        indicatorText += ")";
+        
+        // Render text to surface
+        SDL_Color textColor = {255, 255, 0, 255};  // Yellow
+        SDL_Surface* textSurface = TTF_RenderText_Solid(m_font, indicatorText.c_str(), textColor);
+        
+        if (textSurface) {
+            // Create texture from surface
+            SDL_Texture* textTexture = SDL_CreateTextureFromSurface(m_renderer, textSurface);
+            
+            if (textTexture) {
+                // Position text offset from cursor (below and to the right)
+                int offsetX = 20;  // Offset to the right of cursor
+                int offsetY = 20;  // Offset below cursor
+                int bottomMargin = 60;  // Keep away from bottom edge (window bar)
+                int rightMargin = 20;   // Keep away from right edge
+                
+                // Calculate text box dimensions
+                int boxWidth = textSurface->w + 8;
+                int boxHeight = textSurface->h + 6;
+                
+                // Start with default position (below and right of cursor)
+                int textX = m_mouseX + offsetX;
+                int textY = m_mouseY + offsetY;
+                
+                // Check if too close to right edge - flip to left
+                if (textX + boxWidth + rightMargin > m_windowWidth) {
+                    textX = m_mouseX - boxWidth - offsetX;
+                }
+                
+                // Check if too close to bottom edge - flip above
+                if (textY + boxHeight + bottomMargin > m_windowHeight) {
+                    textY = m_mouseY - boxHeight - offsetY;
+                }
+                
+                // Final safety check - clamp to screen bounds
+                textX = std::max(5, std::min(textX, m_windowWidth - boxWidth - 5));
+                textY = std::max(5, std::min(textY, m_windowHeight - boxHeight - bottomMargin));
+                
+                // Draw small background box
+                SDL_Rect textBox = {
+                    textX,
+                    textY,
+                    boxWidth,
+                    boxHeight
+                };
+                
+                SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 180);
+                SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
+                SDL_RenderFillRect(m_renderer, &textBox);
+                
+                // Draw text
+                SDL_Rect textRect = {
+                    textBox.x + 4,
+                    textBox.y + 3,
+                    textSurface->w,
+                    textSurface->h
+                };
+                SDL_RenderCopy(m_renderer, textTexture, nullptr, &textRect);
+                
+                SDL_DestroyTexture(textTexture);
+            }
+            
+            SDL_FreeSurface(textSurface);
+        }
+    }
+    
+    SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_NONE);
+    
     // Present the rendered frame
     SDL_RenderPresent(m_renderer);
 }
 
 void Game::shutdown() {
+    // Cleanup font
+    if (m_font) {
+        TTF_CloseFont(m_font);
+        m_font = nullptr;
+    }
+    
     // Cleanup texture manager
     TextureManager::getInstance().cleanup();
     
@@ -332,7 +445,8 @@ void Game::shutdown() {
         SDL_DestroyWindow(m_window);
         m_window = nullptr;
     }
-    
+
+    TTF_Quit();
     SDL_Quit();
     std::cout << "Game shut down successfully." << std::endl;
 }

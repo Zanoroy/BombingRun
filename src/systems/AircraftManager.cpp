@@ -73,13 +73,15 @@ void AircraftManager::update(float deltaTime, WeaponManager* weaponManager) {
                 int bombCount = Bomb::getMaxBombs(bombType);
                 
                 // Get target radius for this bomb type
+                // BattleGround map scale: 4x larger map = 4x smaller target radius
                 int targetRadius = Bomb::getConfig(bombType).targetRadius;
+                float scaledRadius = targetRadius * 0.25f;  // 4x smaller for BattleGround
                 
                 std::cout << "Bomber dropping " << bombCount << " bombs of type " << bomber->getBombType() << std::endl;
                 
                 // Drop all bombs in random pattern within target circle
                 std::uniform_real_distribution<float> angleDist(0.0f, 2.0f * M_PI);
-                std::uniform_real_distribution<float> radiusDist(0.0f, static_cast<float>(targetRadius));
+                std::uniform_real_distribution<float> radiusDist(0.0f, scaledRadius);
                 
                 float bomberY = bomber->getY();  // Get bomber's current Y position
                 

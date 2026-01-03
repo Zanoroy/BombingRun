@@ -69,17 +69,17 @@
 ---
 
 ## **Phase 4: Bomb System** (Weeks 7-8)
-**Status:** Not Started  
+**Status:** Completed ✅  
 **Target Completion:** Week 8
 
 ### Tasks:
-- [ ] Create `Bomb` base class hierarchy
-- [ ] Implement 7 bomb types (100lb - 8000lb)
-- [ ] Add bomb physics and drop mechanics
-- [ ] Build explosion system with animations
-- [ ] Create crater formation with aging effects
-- [ ] Implement special 8000lb three-ring effect
-- [ ] Add collision detection for bombs
+- [x] Create `Bomb` base class hierarchy
+- [x] Implement 7 bomb types (100lb - 8000lb)
+- [x] Add bomb physics and drop mechanics
+- [x] Build explosion system with animations
+- [x] Create crater formation with aging effects
+- [x] Implement special 8000lb three-ring effect
+- [x] Add collision detection for bombs
 
 ### Deliverables:
 - All bomb types functional
@@ -89,17 +89,17 @@
 ---
 
 ## **Phase 5: City Map & Buildings** (Weeks 9-10)
-**Status:** Not Started  
+**Status:** Completed ✅  
 **Target Completion:** Week 10
 
 ### Tasks:
-- [ ] Implement procedural building generation
-- [ ] Create destructible civilian buildings
-- [ ] Add building collision detection
-- [ ] Implement visual damage states
-- [ ] Build City map environment
-- [ ] Add targeting circle visualization
-- [ ] Test bomb-building interactions
+- [x] Implement procedural building generation
+- [x] Create destructible civilian buildings
+- [x] Add building collision detection
+- [x] Implement visual damage states
+- [x] Build City map environment
+- [x] Add targeting circle visualization
+- [x] Test bomb-building interactions
 
 ### Deliverables:
 - Functional City map
@@ -109,22 +109,27 @@
 ---
 
 ## **Phase 6: BattleGround Map & Military Base** (Weeks 11-12)
-**Status:** Not Started  
-**Target Completion:** Week 12
+**Status:** Complete ✅  
+**Completion Date:** 3 January 2026
 
 ### Tasks:
-- [ ] Design runway system with 1000 HP
-- [ ] Implement runway damage calculation
-- [ ] Add runway regeneration mechanics
-- [ ] Create military buildings (hangars, fuel tanks, radar)
-- [ ] Implement building-runway health linkage (-10 HP per building)
-- [ ] Build 0.25x scaling system for large map
-- [ ] Add runway health visualization
+- [x] Design runway system with 1000 HP
+- [x] Implement runway damage calculation
+- [x] Add runway regeneration mechanics
+- [x] Create military buildings (hangars, fuel tanks, radar)
+- [x] Implement building-runway health linkage (-10 HP per building)
+- [x] Map scaled down 4x (0.25x scale) with 22 military buildings
+- [x] Add fence around airfield perimeter
+- [x] Add runway health visualization
+- [x] Scale bomb spread down 4x for accurate targeting
+- [ ] Add a main menu with map selection to choose between maps, and play button
 
 ### Deliverables:
-- BattleGround map operational
-- Runway system with health mechanics
-- Military base infrastructure
+- BattleGround map operational ✅
+- Runway system with health mechanics ✅
+- Military base infrastructure ✅
+- 22 military buildings (6 hangars, 8 fuel tanks, 2 radar towers, 4 barracks, 2 ammo depots) ✅
+- Scaled targeting system (4x tighter bomb spread) ✅
 
 ---
 

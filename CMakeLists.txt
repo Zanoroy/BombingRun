@@ -31,11 +31,16 @@ set(SOURCES
     src/entities/GameObject.cpp
     src/entities/Bomber.cpp
     src/entities/Bomb.cpp
+    src/entities/Building.cpp
+    src/entities/CivilianBuilding.cpp
+    src/entities/MilitaryBuilding.cpp
+    src/entities/Runway.cpp
     src/systems/TextureManager.cpp
     src/systems/CollisionDetector.cpp
     src/systems/AircraftManager.cpp
     src/systems/WeaponManager.cpp
     src/systems/ExplosionManager.cpp
+    src/systems/BuildingManager.cpp
     src/maps/Map.cpp
     src/utils/PerformanceMonitor.cpp
 )
