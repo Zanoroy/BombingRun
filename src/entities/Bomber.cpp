@@ -182,7 +182,7 @@ SDL_Color Bomber::getDamageColor() const {
 }
 
 bool Bomber::loadSprites() {
-    return TextureManager::getInstance().loadTexture("planes", "assets/sprites/planes.png");
+    return TextureManager::getInstance().loadTexture("planes", "assets/sprites/bomberandfighter.png");
 }
 
 } // namespace BombingRun
