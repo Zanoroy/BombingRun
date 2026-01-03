@@ -28,6 +28,10 @@ set(SOURCES
     src/main.cpp
     src/core/Game.cpp
     src/core/GameState.cpp
+    src/entities/GameObject.cpp
+    src/systems/TextureManager.cpp
+    src/systems/CollisionDetector.cpp
+    src/utils/PerformanceMonitor.cpp
 )
 
 # Create executable

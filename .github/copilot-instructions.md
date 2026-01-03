@@ -125,8 +125,8 @@ BombingRun/
 ```
 
 ### Current Development Status
-- **Active Phase:** Phase 1 - Foundation & Core Infrastructure
-- **Next Steps:** Set up CMake project structure, implement basic SDL2 window, create game loop
+- **Active Phase:** Phase 2 - Basic Objects & Rendering
+- **Next Steps:** Create base GameObject class, implement sprite loading system, add texture manager
 - **Blockers:** None
 
 ### Build & Run Information

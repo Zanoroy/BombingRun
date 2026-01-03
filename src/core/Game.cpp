@@ -69,6 +69,10 @@ bool Game::initialize(const std::string& title, int width, int height) {
     // Set blend mode for transparency support
     SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
 
+    // Initialize and set up texture manager
+    TextureManager::getInstance().initialize();
+    TextureManager::getInstance().setRenderer(m_renderer);
+
     m_running = true;
     m_lastFrameTime = SDL_GetTicks();
 
@@ -80,7 +84,7 @@ bool Game::initialize(const std::string& title, int width, int height) {
 
 void Game::run() {
     while (m_running) {
-        Uint32 frameStart = SDL_GetTicks();
+        m_perfMonitor.startFrame();
         
         handleEvents();
         
@@ -92,8 +96,10 @@ void Game::run() {
         update(deltaTime);
         render();
         
+        m_perfMonitor.endFrame();
+        
         // Frame rate limiting
-        Uint32 frameTime = SDL_GetTicks() - frameStart;
+        Uint32 frameTime = SDL_GetTicks() - currentTime;
         if (frameTime < TARGET_FRAME_TIME) {
             SDL_Delay(TARGET_FRAME_TIME - frameTime);
         }
@@ -157,12 +163,13 @@ void Game::update(float deltaTime) {
     static float totalTime = 0.0f;
     totalTime += deltaTime;
     
-    // Print every second as a heartbeat
+    // Print FPS every 5 seconds
     if (static_cast<int>(totalTime) % 5 == 0 && deltaTime > 0) {
         static int lastSecond = -1;
         int currentSecond = static_cast<int>(totalTime);
         if (currentSecond != lastSecond) {
-            std::cout << "Game running... (" << currentSecond << "s)" << std::endl;
+            std::cout << "Game running... FPS: " << m_perfMonitor.getAverageFPS() 
+                      << " (" << currentSecond << "s)" << std::endl;
             lastSecond = currentSecond;
         }
     }
@@ -184,6 +191,9 @@ void Game::render() {
 }
 
 void Game::shutdown() {
+    // Cleanup texture manager
+    TextureManager::getInstance().cleanup();
+    
     if (m_renderer) {
         SDL_DestroyRenderer(m_renderer);
         m_renderer = nullptr;

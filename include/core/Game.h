@@ -3,6 +3,8 @@
 #include <SDL2/SDL.h>
 #include <memory>
 #include <string>
+#include "systems/TextureManager.h"
+#include "utils/PerformanceMonitor.h"
 
 namespace BombingRun {
 
@@ -69,6 +71,7 @@ private:
     Uint32 m_lastFrameTime;
     int m_windowWidth;
     int m_windowHeight;
+    PerformanceMonitor m_perfMonitor;
 
     // Target frame time for 60 FPS (16.67ms)
     static constexpr Uint32 TARGET_FRAME_TIME = 16;
