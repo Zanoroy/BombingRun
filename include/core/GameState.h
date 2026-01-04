@@ -7,7 +7,8 @@ namespace BombingRun {
  */
 enum class GameState {
     MENU,       // Main menu with map selection
-    PLAYING,    // Active gameplay
+    PLAYING,    // Active gameplay (bombing missions)
+    PVP,        // PVP dogfight mode
     PAUSED,     // Game paused
     GAME_OVER   // Game ended (victory or defeat)
 };

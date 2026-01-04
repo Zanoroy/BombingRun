@@ -34,6 +34,7 @@ set(SOURCES
     src/entities/Bullet.cpp
     src/entities/FighterJet.cpp
     src/entities/AAAGun.cpp
+    src/entities/PlayerJet.cpp
     src/entities/Building.cpp
     src/entities/CivilianBuilding.cpp
     src/entities/MilitaryBuilding.cpp
@@ -44,6 +45,7 @@ set(SOURCES
     src/systems/WeaponManager.cpp
     src/systems/ExplosionManager.cpp
     src/systems/BuildingManager.cpp
+    src/systems/AudioManager.cpp
     src/maps/Map.cpp
     src/utils/PerformanceMonitor.cpp
 )
