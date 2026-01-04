@@ -88,6 +88,9 @@ private:
     int m_mouseX;                  // Current mouse X position
     int m_mouseY;                  // Current mouse Y position
     TTF_Font* m_font;              // Font for text rendering
+    bool m_airstrikeMode;          // Whether airstrike targeting is active
+    float m_airstrikeTargetX;      // Target X for airstrike
+    float m_airstrikeTargetY;      // Target Y for airstrike
 
     // Target frame time for 60 FPS (16.67ms)
     static constexpr Uint32 TARGET_FRAME_TIME = 16;

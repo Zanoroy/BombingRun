@@ -2,6 +2,7 @@
 
 #include "entities/Bomber.h"
 #include "entities/FighterJet.h"
+#include "entities/AAAGun.h"
 #include "utils/ObjectPool.h"
 #include <SDL2/SDL.h>
 #include <random>
@@ -53,6 +54,13 @@ public:
     void spawnBomber(float targetX = -1.0f, float targetY = -1.0f, int bombType = 0);
 
     /**
+     * @brief Deploy airstrike - spawns 5 bombers in formation with small bombs
+     * @param targetX Target X position (if negative, uses cursor or random)
+     * @param targetY Target Y position (if negative, random ground position)
+     */
+    void deployAirstrike(float targetX = -1.0f, float targetY = -1.0f);
+
+    /**
      * @brief Spawn a fighter jet to defend the airfield
      */
     void spawnFighterJet();
@@ -91,6 +99,14 @@ public:
     Bomber* checkBomberCollision(float x, float y);
 
     /**
+     * @brief Check collision with point (for bullet hits on fighters)
+     * @param x Point X
+     * @param y Point Y
+     * @return Pointer to hit fighter or nullptr
+     */
+    FighterJet* checkFighterCollision(float x, float y);
+
+    /**
      * @brief Get all active bombers
      * @return Vector of bomber pointers
      */
@@ -101,6 +117,17 @@ public:
      * @return Vector of fighter jet pointers
      */
     std::vector<FighterJet*> getActiveFighters();
+
+    /**
+     * @brief Get all AAA guns
+     * @return Vector of AAA gun pointers
+     */
+    std::vector<AAAGun*> getAAAGuns();
+
+    /**
+     * @brief Initialize AAA guns around runway
+     */
+    void initializeAAAGuns();
 
     /**
      * @brief Clear all aircraft
@@ -125,6 +152,7 @@ private:
 
     std::vector<std::unique_ptr<Bomber>> m_bombers;
     std::vector<std::unique_ptr<FighterJet>> m_fighters;
+    std::vector<std::unique_ptr<AAAGun>> m_aaaGuns;
     
     int m_screenWidth;
     int m_screenHeight;
@@ -136,8 +164,8 @@ private:
     
     float m_autoSpawnTimer;  // Timer for automatic fighter spawning
     
-    // Bomb type speeds from specification
-    static constexpr float BOMB_SPEEDS[7] = {6.0f, 5.5f, 5.0f, 4.0f, 3.0f, 2.5f, 2.0f};
+    // Bomb type speeds from specification (includes airstrike at index 7)
+    static constexpr float BOMB_SPEEDS[8] = {6.0f, 5.5f, 5.0f, 4.0f, 3.0f, 2.5f, 2.0f, 5.0f};
 };
 
 } // namespace BombingRun

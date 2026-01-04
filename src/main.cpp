@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Controls:" << std::endl;
     std::cout << "  ESC       - Quit" << std::endl;
     std::cout << "  SPACE     - Deploy bomber" << std::endl;
-    std::cout << "  A         - Deploy airstrike" << std::endl;
+    std::cout << "  8         - Deploy airstrike" << std::endl;
     std::cout << "  F         - Deploy fighter jet" << std::endl;
     std::cout << "  1-7       - Select bomb type" << std::endl;
     std::cout << "  Click     - Drop bomb at cursor" << std::endl;

@@ -43,7 +43,7 @@ bin\Release\BombingRun.exe
 ## Controls
 - **ESC** - Quit
 - **SPACE** - Deploy bomber
-- **A** - Deploy airstrike
+- **8** - Deploy airstrike
 - **1-7** - Select bomb type (100lb-8000lb)
 - **Left Click** - Drop bomb at cursor
 

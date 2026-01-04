@@ -15,6 +15,9 @@ Game::Game()
     , m_mouseX(0)
     , m_mouseY(0)
     , m_font(nullptr)
+    , m_airstrikeMode(false)
+    , m_airstrikeTargetX(0.0f)
+    , m_airstrikeTargetY(0.0f)
 {
 }
 
@@ -119,6 +122,9 @@ bool Game::initialize(const std::string& title, int width, int height) {
         float runwayX = m_currentMap->getRunway()->getX() + m_currentMap->getRunway()->getWidth() / 2.0f;
         float runwayY = m_currentMap->getRunway()->getY() + m_currentMap->getRunway()->getHeight() / 2.0f;
         m_aircraftManager.setRunwayPosition(runwayX, runwayY);
+        
+        // Initialize AAA guns around runway for defense
+        m_aircraftManager.initializeAAAGuns();
     }
 
     m_running = true;
@@ -181,8 +187,10 @@ void Game::handleEvents() {
                         std::cout << "Spacebar pressed - Deployed bomber with bomb type " 
                                   << static_cast<int>(m_selectedBombType) << std::endl;
                         break;
-                    case SDLK_a:
-                        std::cout << "A pressed - Deploy airstrike" << std::endl;
+                    case SDLK_8:
+                        // Activate airstrike targeting mode
+                        m_airstrikeMode = true;
+                        std::cout << "8 pressed - Airstrike targeting mode activated. Click to deploy." << std::endl;
                         break;
                     case SDLK_f:
                         m_aircraftManager.spawnFighterJet();
@@ -213,15 +221,25 @@ void Game::handleEvents() {
                 
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button == SDL_BUTTON_LEFT) {
-                    float targetX = static_cast<float>(event.button.x);
-                    float targetY = static_cast<float>(event.button.y);
-                    
-                    // Spawn bomber that will fly to target and drop bombs
-                    m_aircraftManager.spawnBomber(targetX, targetY, static_cast<int>(m_selectedBombType));
-                    
-                    std::cout << "Mouse clicked at: (" 
-                              << event.button.x << ", " 
-                              << event.button.y << ") - Spawned bomber" << std::endl;
+                    if (m_airstrikeMode) {
+                        // Deploy airstrike at clicked position
+                        float targetX = static_cast<float>(event.button.x);
+                        float targetY = static_cast<float>(event.button.y);
+                        m_aircraftManager.deployAirstrike(targetX, targetY);
+                        m_airstrikeMode = false;  // Deactivate targeting mode
+                        std::cout << "Airstrike deployed at (" << targetX << ", " << targetY << ")" << std::endl;
+                    } else {
+                        // Normal bomber deployment
+                        float targetX = static_cast<float>(event.button.x);
+                        float targetY = static_cast<float>(event.button.y);
+                        
+                        // Spawn bomber that will fly to target and drop bombs
+                        m_aircraftManager.spawnBomber(targetX, targetY, static_cast<int>(m_selectedBombType));
+                        
+                        std::cout << "Mouse clicked at: (" 
+                                  << event.button.x << ", " 
+                                  << event.button.y << ") - Spawned bomber" << std::endl;
+                    }
                 }
                 break;
         }
@@ -257,6 +275,22 @@ void Game::update(float deltaTime) {
                 if (hitBomber->getHealth() <= 0) {
                     std::cout << "Bomber destroyed by fighter jet!" << std::endl;
                     hitBomber->destroy();
+                }
+            }
+            
+            // Check bullet collisions with fighters (AAA guns can shoot them down)
+            FighterJet* hitFighter = m_aircraftManager.checkFighterCollision(bullet->getX(), bullet->getY());
+            if (hitFighter) {
+                float fighterX = hitFighter->getX();
+                float fighterY = hitFighter->getY();
+                bool destroyed = hitFighter->takeDamage(1);  // Bullets do 1 damage
+                bullet->markHit();  // Destroy the bullet
+                
+                // If fighter was destroyed, create explosion
+                if (destroyed) {
+                    std::cout << "Fighter jet destroyed! Creating explosion" << std::endl;
+                    // Create explosion at fighter position (medium size - 60px radius)
+                    m_explosionManager.createExplosion(fighterX, fighterY, 60, 0.8f);
                 }
             }
             
@@ -375,6 +409,59 @@ void Game::render() {
     // Render aircraft
     m_aircraftManager.render(m_renderer);
     
+    // Draw airstrike target indicators if in airstrike mode
+    if (m_airstrikeMode) {
+        SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
+        
+        // Calculate bomber positions (same logic as deployAirstrike)
+        // Triangle formation without bottom (flipped - wide at front)
+        // Planes on same row aligned horizontally
+        const float spacing = 80.0f;
+        const float verticalSpacing = 100.0f;
+        
+        float positions[5][2] = {
+            {static_cast<float>(m_mouseX), m_mouseY - verticalSpacing * 2},  // Back point
+            {m_mouseX - spacing, m_mouseY - verticalSpacing},                // Middle left
+            {m_mouseX + spacing, m_mouseY - verticalSpacing},                // Middle right (same Y)
+            {m_mouseX - spacing * 2, static_cast<float>(m_mouseY)},          // Front left
+            {m_mouseX + spacing * 2, static_cast<float>(m_mouseY)}           // Front right (same Y)
+        };
+        
+        // Draw 5 target indicators for each bomber
+        for (int i = 0; i < 5; i++) {
+            float targetX = positions[i][0];
+            float targetY = positions[i][1];
+            
+            // Draw target circle (30px radius for visibility)
+            SDL_SetRenderDrawColor(m_renderer, 255, 165, 0, 150);  // Orange with transparency
+            int circleRadius = 30;
+            int segments = 24;
+            for (int j = 0; j < segments; j++) {
+                float angle1 = (j * 2.0f * M_PI) / segments;
+                float angle2 = ((j + 1) * 2.0f * M_PI) / segments;
+                
+                int x1 = static_cast<int>(targetX + circleRadius * cos(angle1));
+                int y1 = static_cast<int>(targetY + circleRadius * sin(angle1));
+                int x2 = static_cast<int>(targetX + circleRadius * cos(angle2));
+                int y2 = static_cast<int>(targetY + circleRadius * sin(angle2));
+                
+                SDL_RenderDrawLine(m_renderer, x1, y1, x2, y2);
+            }
+            
+            // Draw crosshair
+            SDL_SetRenderDrawColor(m_renderer, 255, 0, 0, 180);  // Red
+            int crossSize = 15;
+            SDL_RenderDrawLine(m_renderer, 
+                static_cast<int>(targetX) - crossSize, static_cast<int>(targetY),
+                static_cast<int>(targetX) + crossSize, static_cast<int>(targetY));
+            SDL_RenderDrawLine(m_renderer,
+                static_cast<int>(targetX), static_cast<int>(targetY) - crossSize,
+                static_cast<int>(targetX), static_cast<int>(targetY) + crossSize);
+        }
+        
+        SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_NONE);
+    }
+    
     // Render targeting circle (on top of everything)
     int targetRadius = Bomb::getConfig(m_selectedBombType).targetRadius;
     // Scale target circle by 0.25x for BattleGround map (4x larger map)
@@ -405,20 +492,26 @@ void Game::render() {
     
     // Draw bomb selection indicator near mouse cursor
     if (m_font) {
-        const char* bombNames[] = {
-            "100lb",
-            "250lb", 
-            "500lb",
-            "1000lb",
-            "2000lb",
-            "4000lb",
-            "8000lb"
-        };
+        std::string indicatorText;
         
-        std::string indicatorText = bombNames[static_cast<int>(m_selectedBombType)];
-        indicatorText += " (";
-        indicatorText += std::to_string(m_weaponManager.getRemainingBombs(m_selectedBombType));
-        indicatorText += ")";
+        if (m_airstrikeMode) {
+            indicatorText = "AIRSTRIKE (250lb x 5 planes)";
+        } else {
+            const char* bombNames[] = {
+                "100lb",
+                "250lb", 
+                "500lb",
+                "1000lb",
+                "2000lb",
+                "4000lb",
+                "8000lb"
+            };
+            
+            indicatorText = bombNames[static_cast<int>(m_selectedBombType)];
+            indicatorText += " (";
+            indicatorText += std::to_string(m_weaponManager.getRemainingBombs(m_selectedBombType));
+            indicatorText += ")";
+        }
         
         // Render text to surface
         SDL_Color textColor = {255, 255, 0, 255};  // Yellow

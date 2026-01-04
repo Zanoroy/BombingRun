@@ -6,14 +6,15 @@ namespace BombingRun {
 
 // Bomb configuration table from specification
 // Format: {maxBombs, craterSize, targetRadius, damage, speed}
-const BombConfig Bomb::BOMB_CONFIGS[7] = {
+const BombConfig Bomb::BOMB_CONFIGS[8] = {
     BombConfig(10, 15, 60, 3, 6.0f),    // 100lb - increased damage
     BombConfig(8, 20, 75, 5, 5.5f),     // 250lb - increased damage
     BombConfig(6, 25, 90, 8, 5.0f),     // 500lb - increased damage
     BombConfig(3, 40, 120, 15, 4.0f),   // 1000lb - increased damage
     BombConfig(1, 80, 90, 30, 3.0f),    // 2000lb - increased damage
     BombConfig(1, 160, 60, 50, 2.5f),   // 4000lb - increased damage
-    BombConfig(1, 320, 60, 100, 2.0f)   // 8000lb - increased damage
+    BombConfig(1, 320, 60, 100, 2.0f),  // 8000lb - increased damage
+    BombConfig(15, 15, 90, 1, 5.0f)     // Airstrike - 15 small bombs per plane
 };
 
 Bomb::Bomb(float x, float y, BombType type)
@@ -35,6 +36,7 @@ Bomb::Bomb(float x, float y, BombType type)
         case BombType::BOMB_2000LB: m_fallSpeed = 150.0f; break;
         case BombType::BOMB_4000LB: m_fallSpeed = 120.0f; break;
         case BombType::BOMB_8000LB: m_fallSpeed = 100.0f; break; // Heaviest - slowest
+        case BombType::AIRSTRIKE:   m_fallSpeed = 250.0f; break; // Same as 100lb
     }
     
     m_width = 8.0f;   // Small size for bomb

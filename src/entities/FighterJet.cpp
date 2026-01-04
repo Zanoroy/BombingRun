@@ -8,8 +8,8 @@ namespace BombingRun {
 
 FighterJet::FighterJet(float x, float y, float runwayX, float runwayY)
     : GameObject(x, y)
-    , m_health(4)
-    , m_maxHealth(4)
+    , m_health(5)
+    , m_maxHealth(5)
     , m_bulletsRemaining(579)
     , m_speed(400.0f)  // Faster than bombers
     , m_fireRate(8.0f)  // 8 shots per second (increased from 3)
@@ -353,9 +353,10 @@ bool FighterJet::takeDamage(int damage) {
     std::cout << "Fighter jet hit! Health: " << m_health << "/" << m_maxHealth << std::endl;
     
     if (m_health == 0) {
+        // Fighter is destroyed - store position for explosion
         m_active = false;
-        std::cout << "Fighter jet destroyed!" << std::endl;
-        return true;
+        std::cout << "Fighter jet destroyed! Creating explosion at (" << m_x << ", " << m_y << ")" << std::endl;
+        return true;  // Return true to signal explosion needed
     }
     
     return false;

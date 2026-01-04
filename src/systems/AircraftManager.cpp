@@ -72,6 +72,64 @@ void AircraftManager::spawnBomber(float targetX, float targetY, int bombType) {
               << " sprite " << spriteIndex << std::endl;
 }
 
+void AircraftManager::deployAirstrike(float targetX, float targetY) {
+    // If target not specified, use random position
+    if (targetX < 0.0f) {
+        targetX = getRandomTargetX();
+    }
+    if (targetY < 0.0f) {
+        targetY = getGroundY();
+    }
+
+    std::cout << "Deploying airstrike at target (" << targetX << ", " << targetY << ")" << std::endl;
+
+    // Airstrike uses 250lb bomb type (type 1) - each bomber carries 8 bombs
+    const int bombType = 1;  // BOMB_250LB
+    const float speed = getSpeedForBombType(bombType);
+    
+    // Deploy 5 bombers in triangle formation (no bottom)
+    // Formation pattern (flipped - wide at front, point at back):
+    //    4       5 (front row - wide part, aligned horizontally)
+    //      2   3 (middle row, aligned horizontally)
+    //        1 (back/point)
+    const float spacing = 80.0f;  // Horizontal spacing between planes
+    const float verticalSpacing = 100.0f;  // Vertical spacing between rows
+    
+    // Define positions for 5 planes in triangle pattern
+    // Planes on the same row have identical Y coordinates for straight lines
+    float positions[5][2] = {
+        {targetX, targetY - verticalSpacing * 2},              // Plane 1: point at back
+        {targetX - spacing, targetY - verticalSpacing},        // Plane 2: middle left
+        {targetX + spacing, targetY - verticalSpacing},        // Plane 3: middle right (same Y as plane 2)
+        {targetX - spacing * 2, targetY},                      // Plane 4: front left (wide part)
+        {targetX + spacing * 2, targetY}                       // Plane 5: front right (same Y as plane 4)
+    };
+    
+    // Spawn Y offsets for each row - planes on same row spawn at same height
+    float spawnYOffsets[5] = {
+        0.0f,   // Plane 1 (back point)
+        30.0f,  // Plane 2 (middle left)
+        30.0f,  // Plane 3 (middle right) - same as plane 2
+        60.0f,  // Plane 4 (front left)
+        60.0f   // Plane 5 (front right) - same as plane 4
+    };
+    
+    for (int i = 0; i < 5; i++) {
+        float targetPosX = positions[i][0];
+        float targetPosY = positions[i][1];
+        float spawnX = targetPosX;
+        float spawnY = m_screenHeight + 50.0f + spawnYOffsets[i];  // Use row-aligned spawn positions
+        
+        // Create bomber with 250lb bombs
+        auto bomber = std::make_unique<Bomber>(spawnX, spawnY, targetPosX, targetPosY, speed, bombType, 0);
+        m_bombers.push_back(std::move(bomber));
+        
+        std::cout << "  Airstrike plane " << (i + 1) << " spawned at (" 
+                  << spawnX << ", " << spawnY << ") targeting (" 
+                  << targetPosX << ", " << targetPosY << ")" << std::endl;
+    }
+}
+
 void AircraftManager::update(float deltaTime, WeaponManager* weaponManager) {
     // Update all bombers
     for (auto& bomber : m_bombers) {
@@ -150,8 +208,27 @@ void AircraftManager::update(float deltaTime, WeaponManager* weaponManager) {
     // Don't assign bomber targets - fighters just patrol and shoot runway
     // assignFighterTargets();
     
-    // Check for automatic fighter spawning
-    checkAutoSpawn();
+    // Check for automatic fighter spawning - DISABLED: fighters only spawn when F key is pressed
+    // checkAutoSpawn();
+
+    // Update AAA guns - they target both bombers and fighters
+    std::vector<Bomber*> activeBombers;
+    for (auto& bomber : m_bombers) {
+        if (bomber && bomber->isActive()) {
+            activeBombers.push_back(bomber.get());
+        }
+    }
+    std::vector<FighterJet*> activeFighters;
+    for (auto& fighter : m_fighters) {
+        if (fighter && fighter->isActive()) {
+            activeFighters.push_back(fighter.get());
+        }
+    }
+    for (auto& gun : m_aaaGuns) {
+        if (gun) {
+            gun->updateTargeting(deltaTime, activeBombers, activeFighters, weaponManager);
+        }
+    }
 
     // Remove inactive bombers (destroyed or exited)
     m_bombers.erase(
@@ -184,6 +261,13 @@ void AircraftManager::render(SDL_Renderer* renderer) {
     for (auto& fighter : m_fighters) {
         if (fighter && fighter->isActive()) {
             fighter->render(renderer);
+        }
+    }
+    
+    // Render AAA guns
+    for (auto& gun : m_aaaGuns) {
+        if (gun) {
+            gun->render(renderer);
         }
     }
 }
@@ -284,6 +368,18 @@ Bomber* AircraftManager::checkBomberCollision(float x, float y) {
     return nullptr;
 }
 
+FighterJet* AircraftManager::checkFighterCollision(float x, float y) {
+    for (auto& fighter : m_fighters) {
+        if (fighter && fighter->isActive()) {
+            SDL_Rect bounds = fighter->getBounds();
+            if (CollisionDetector::checkPointRect(x, y, bounds)) {
+                return fighter.get();
+            }
+        }
+    }
+    return nullptr;
+}
+
 void AircraftManager::assignFighterTargets() {
     // Get all active bombers
     auto bombers = getActiveBombers();
@@ -364,6 +460,44 @@ void AircraftManager::checkAutoSpawn() {
     if (m_autoSpawnTimer > 0.0f) {
         m_autoSpawnTimer -= 0.016f;  // Assuming ~60 FPS
     }
+}
+
+void AircraftManager::initializeAAAGuns() {
+    if (!m_runwaySet) {
+        std::cerr << "Cannot initialize AAA guns - runway position not set!" << std::endl;
+        return;
+    }
+
+    m_aaaGuns.clear();
+
+    // Position 4 AAA guns around the runway in a defensive formation
+    // Guns positioned at corners around runway area
+    const float offsetX = 200.0f;  // Distance from runway center horizontally
+    const float offsetY = 100.0f;  // Distance from runway center vertically
+
+    // Gun 1: Top-left of runway
+    m_aaaGuns.push_back(std::make_unique<AAAGun>(m_runwayX - offsetX, m_runwayY - offsetY));
+
+    // Gun 2: Top-right of runway
+    m_aaaGuns.push_back(std::make_unique<AAAGun>(m_runwayX + offsetX, m_runwayY - offsetY));
+
+    // Gun 3: Bottom-left of runway
+    m_aaaGuns.push_back(std::make_unique<AAAGun>(m_runwayX - offsetX, m_runwayY + offsetY));
+
+    // Gun 4: Bottom-right of runway
+    m_aaaGuns.push_back(std::make_unique<AAAGun>(m_runwayX + offsetX, m_runwayY + offsetY));
+
+    std::cout << "Initialized 4 AAA guns around runway at (" << m_runwayX << ", " << m_runwayY << ")" << std::endl;
+}
+
+std::vector<AAAGun*> AircraftManager::getAAAGuns() {
+    std::vector<AAAGun*> guns;
+    for (auto& gun : m_aaaGuns) {
+        if (gun) {
+            guns.push_back(gun.get());
+        }
+    }
+    return guns;
 }
 
 } // namespace BombingRun

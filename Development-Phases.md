@@ -161,30 +161,46 @@
 ---
 
 ## **Phase 8: Airstrike Special Weapon** (Week 15)
-**Status:** Not Started  
-**Target Completion:** Week 15
+**Status:** Complete ✅  
+**Completion Date:** 4 January 2026
 
 ### Tasks:
-- [ ] Implement 5-plane coordinated deployment
-- [ ] Create airstrike coordination system
-- [ ] Build special targeting pattern
-- [ ] Add airstrike-specific UI feedback
+- [x] Implement 5-plane coordinated deployment
+- [x] Create airstrike coordination system
+- [x] Build special targeting pattern
+- [x] Add airstrike-specific UI feedback
+- [x] Triangle formation with wide front, point at back
+- [x] Click-to-deploy targeting mode (8 key)
+- [x] Perfect row alignment for formation
+- [x] Each bomber carries 8x 250lb bombs
 
 ### Deliverables:
-- Airstrike weapon functional
-- Coordinated multi-plane attack
+- Airstrike weapon functional ✅
+- Coordinated multi-plane attack ✅
+- Visual target indicators ✅
 
 ---
 
 ## **Phase 8.5: AAA Defence System** (Weeks 16-17)
-**Status:** Not Started  
-**Target Completion:** Week 17
+**Status:** Complete ✅  
+**Completion Date:** 4 January 2026
 
 ### Tasks:
-- [ ] Construct a good looking visual of an Anti Air Artillary Gunner
-- [ ] Give it a simple targeting ai that has predictive movement shots(not moveing bullets, aiming in advance)
-- [ ] make the AAA target Enemy planes (which would be the player)
-- [ ] Position four AAA guns across the runway as defences
+- [x] Construct a good looking visual of an Anti Air Artillery Gunner
+- [x] Give it a simple targeting AI that has predictive movement shots (bullet projectiles with lead calculation)
+- [x] Make the AAA target enemy aircraft (bombers and fighters)
+- [x] Position four AAA guns across the runway as defences
+- [x] Add bullet projectile system (1000 px/s)
+- [x] Implement inaccuracy (±50px spread, ~30-40% hit rate)
+- [x] Create explosion effect when fighter jets are destroyed (5 HP required)
+- [x] Add muzzle flash visual effects
+
+### Deliverables:
+- AAA gun visual system operational ✅
+- Predictive targeting AI functional ✅
+- 4 AAA guns defending runway ✅
+- Fighter jets have 5 HP and explode on death ✅
+- Balanced accuracy for challenging gameplay ✅
 
 ---
 
@@ -226,15 +242,17 @@
 
 ---
 
-# **Phase 10.5: PVP Dogfight** (Weeks 16-17)
+# **Phase PVP: PVP Dogfight** (Weeks 16-17)
 **Status:** Not Started  
 **Target Completion:** Week 17
 
 ### Tasks:
-- [ ] Construct a large
-- [ ] Give it a simple targeting ai that has predictive movement shots(not moveing bullets, aiming in advance)
-- [ ] make the AAA target Enemy planes (which would be the player)
-- [ ] Position four AAA guns across the runway as defences
+- [ ] Construct a large map with an ocean background (just water)
+- [ ] Create a jet that a player can control with A, S, W, D keys
+- [ ] W = More acceloration, S = Less Acceloration, D = Rotate right, A = Rotate left
+- [ ] Create another jet that a player controls using arrow keys UP, DOWN, Left ARROW, RIGHT ARROW
+- [ ] UP ARROW = More acceloration, DOWN ARROW = Less Acceloration, RIGHT ARROW = Rotate right, LEFT ARROW = Rotate left
+
 
 ---
 
