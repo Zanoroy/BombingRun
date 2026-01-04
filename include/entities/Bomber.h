@@ -35,7 +35,7 @@ public:
      * @brief Render bomber to screen
      * @param renderer SDL renderer
      */
-    void render(SDL_Renderer* renderer) override;
+    void render(SDL_Renderer* renderer, TTF_Font* font = nullptr) override;
 
     /**
      * @brief Deal damage to bomber

@@ -37,7 +37,7 @@ public:
      * @brief Render building with style-specific appearance
      * @param renderer SDL renderer
      */
-    void render(SDL_Renderer* renderer) override;
+    void render(SDL_Renderer* renderer, TTF_Font* font = nullptr) override;
 
     /**
      * @brief Get building style

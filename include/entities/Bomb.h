@@ -40,7 +40,7 @@ public:
 
     // Core methods
     virtual void update(float deltaTime) override;
-    virtual void render(SDL_Renderer* renderer) override;
+    virtual void render(SDL_Renderer* renderer, TTF_Font* font = nullptr) override;
 
     // Bomb-specific methods
     void drop(float dropX, float dropY, float bomberY = 0);

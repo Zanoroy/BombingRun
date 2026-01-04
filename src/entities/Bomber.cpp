@@ -80,7 +80,7 @@ void Bomber::update(float deltaTime) {
     }
 }
 
-void Bomber::render(SDL_Renderer* renderer) {
+void Bomber::render(SDL_Renderer* renderer, TTF_Font* font) {
     if (!m_active) {
         return;
     }

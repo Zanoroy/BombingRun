@@ -314,7 +314,7 @@ void BuildingManager::update(float deltaTime) {
     );
 }
 
-void BuildingManager::render(SDL_Renderer* renderer) {
+void BuildingManager::render(SDL_Renderer* renderer, TTF_Font* font) {
     // Render fence first (if present)
     if (m_hasFence) {
         SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);  // Gray fence
@@ -332,7 +332,7 @@ void BuildingManager::render(SDL_Renderer* renderer) {
     
     // Render runway (above fence, underneath buildings)
     if (m_runway) {
-        m_runway->render(renderer);
+        m_runway->render(renderer, font);
     }
     
     // Render all buildings
@@ -346,18 +346,30 @@ void BuildingManager::render(SDL_Renderer* renderer) {
 int BuildingManager::checkCollision(float x, float y, float radius, int damage) {
     int damagedCount = 0;
     
-    // Check runway collision first
-    if (m_runway && m_runway->isActive()) {
-        float runwayCenterX = m_runway->getX() + m_runway->getWidth() / 2.0f;
-        float runwayCenterY = m_runway->getY() + m_runway->getHeight() / 2.0f;
+    // Check runway collision first - check if explosion overlaps with runway rectangle
+    if (m_runway) {
+        // Find closest point on runway rectangle to explosion center
+        float closestX = std::max(m_runway->getX(), 
+                                  std::min(x, m_runway->getX() + m_runway->getWidth()));
+        float closestY = std::max(m_runway->getY(), 
+                                  std::min(y, m_runway->getY() + m_runway->getHeight()));
         
-        float dx = runwayCenterX - x;
-        float dy = runwayCenterY - y;
+        // Calculate distance from explosion center to closest point
+        float dx = x - closestX;
+        float dy = y - closestY;
         float distance = std::sqrt(dx * dx + dy * dy);
         
+        // If explosion radius reaches the runway, damage it
         if (distance <= radius) {
-            m_runway->takeDamage(damage);
+            bool destroyed = m_runway->takeDamage(damage);
             damagedCount++;
+            std::cout << "Runway hit! Damage: " << damage 
+                      << " HP: " << m_runway->getHealth() 
+                      << "/" << m_runway->getMaxHealth();
+            if (destroyed) {
+                std::cout << " DESTROYED!";
+            }
+            std::cout << std::endl;
         }
     }
     
@@ -378,8 +390,16 @@ int BuildingManager::checkCollision(float x, float y, float radius, int damage) 
         // Check if within explosion radius
         if (distance <= radius) {
             if (building->takeDamage(damage)) {
-                // Building was destroyed
+                // Building was destroyed - damage runway and reduce its max health
                 damagedCount++;
+                
+                if (m_runway && m_runway->isActive()) {
+                    m_runway->takeDamage(10);  // Deal 10 HP damage to runway
+                    m_runway->reduceMaxHealth(10);  // Permanently reduce max health by 10
+                    std::cout << "Building destroyed! Runway damaged (HP: " 
+                              << m_runway->getHealth() << "/" << m_runway->getMaxHealth() 
+                              << ")" << std::endl;
+                }
             } else {
                 // Building was damaged but not destroyed
                 damagedCount++;

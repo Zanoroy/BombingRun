@@ -31,6 +31,8 @@ set(SOURCES
     src/entities/GameObject.cpp
     src/entities/Bomber.cpp
     src/entities/Bomb.cpp
+    src/entities/Bullet.cpp
+    src/entities/FighterJet.cpp
     src/entities/Building.cpp
     src/entities/CivilianBuilding.cpp
     src/entities/MilitaryBuilding.cpp

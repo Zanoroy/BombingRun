@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <string>
 #include <vector>
 #include <memory>
@@ -64,8 +65,9 @@ public:
     /**
      * @brief Render all map elements
      * @param renderer SDL renderer
+     * @param font TTF font for text rendering (optional)
      */
-    void render(SDL_Renderer* renderer);
+    void render(SDL_Renderer* renderer, TTF_Font* font = nullptr);
 
     /**
      * @brief Check collision with map object
@@ -105,6 +107,12 @@ public:
      * @brief Get building manager
      */
     BuildingManager& getBuildingManager() { return m_buildingManager; }
+    
+    /**
+     * @brief Get runway pointer (for BattleGround map)
+     * @return Pointer to runway or nullptr if not present
+     */
+    Runway* getRunway() { return m_buildingManager.getRunway(); }
 
 private:
     void createMap1();  // City map with roads, houses, river, etc.

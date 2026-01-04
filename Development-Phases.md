@@ -134,22 +134,29 @@
 ---
 
 ## **Phase 7: Fighter Jet Defense System** (Weeks 13-14)
-**Status:** Not Started  
-**Target Completion:** Week 14
+**Status:** Complete ✅  
+**Completion Date:** 4 January 2026
 
 ### Tasks:
-- [ ] Create `FighterJet` class (4 HP, 579 bullets)
-- [ ] Implement patrol behavior and AI
-- [ ] Build bullet physics with 80% hit rate
-- [ ] Add predictive targeting algorithm
-- [ ] Implement spawning triggers (bomber proximity)
-- [ ] Add return-to-base behavior
-- [ ] Create muzzle flash effects
+- [x] Create `FighterJet` class (4 HP, 579 bullets)
+- [x] Implement patrol behavior and AI
+- [x] Build bullet physics with 80% hit rate
+- [x] Add predictive targeting algorithm
+- [x] Implement spawning triggers (automatic and F key)
+- [x] Add return-to-base behavior when out of ammo
+- [x] Create bullet collision detection with bombers
+- [x] Implement smooth turning and rotation
+- [x] Add custom fighter jet sprite support
+- [x] Integrate bullet firing through WeaponManager
+- [x] Add automatic fighter spawning (max 3 fighters)
 
 ### Deliverables:
-- Functional fighter jet AI
-- Combat system operational
-- Enemy engagement mechanics
+- Functional fighter jet AI ✅
+- Combat system operational ✅
+- Enemy engagement mechanics ✅
+- F key to manually spawn fighter jets ✅
+- Automatic spawning when bombers approach ✅
+- Bullets damage and destroy bombers ✅
 
 ---
 
@@ -166,6 +173,18 @@
 ### Deliverables:
 - Airstrike weapon functional
 - Coordinated multi-plane attack
+
+---
+
+## **Phase 8.5: AAA Defence System** (Weeks 16-17)
+**Status:** Not Started  
+**Target Completion:** Week 17
+
+### Tasks:
+- [ ] Construct a good looking visual of an Anti Air Artillary Gunner
+- [ ] Give it a simple targeting ai that has predictive movement shots(not moveing bullets, aiming in advance)
+- [ ] make the AAA target Enemy planes (which would be the player)
+- [ ] Position four AAA guns across the runway as defences
 
 ---
 
@@ -204,6 +223,18 @@
 - Enhanced visual feedback
 - Polished animations
 - Improved game feel
+
+---
+
+# **Phase 10.5: PVP Dogfight** (Weeks 16-17)
+**Status:** Not Started  
+**Target Completion:** Week 17
+
+### Tasks:
+- [ ] Construct a large
+- [ ] Give it a simple targeting ai that has predictive movement shots(not moveing bullets, aiming in advance)
+- [ ] make the AAA target Enemy planes (which would be the player)
+- [ ] Position four AAA guns across the runway as defences
 
 ---
 

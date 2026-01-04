@@ -2,6 +2,7 @@
 
 #include "entities/GameObject.h"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 namespace BombingRun {
 
@@ -32,8 +33,9 @@ public:
     /**
      * @brief Render runway to screen
      * @param renderer SDL renderer
+     * @param font TTF font for rendering text (optional)
      */
-    void render(SDL_Renderer* renderer) override;
+    void render(SDL_Renderer* renderer, TTF_Font* font = nullptr) override;
 
     /**
      * @brief Deal damage to runway

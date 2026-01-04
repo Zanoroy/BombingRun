@@ -10,7 +10,7 @@ CivilianBuilding::CivilianBuilding(float x, float y, float width, float height, 
     m_baseColor = getStyleColor();
 }
 
-void CivilianBuilding::render(SDL_Renderer* renderer) {
+void CivilianBuilding::render(SDL_Renderer* renderer, TTF_Font* font) {
     if (!m_active || m_health <= 0) {
         return;
     }

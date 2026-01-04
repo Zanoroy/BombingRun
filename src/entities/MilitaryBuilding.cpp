@@ -14,7 +14,7 @@ MilitaryBuilding::MilitaryBuilding(float x, float y, float width, float height,
     m_baseColor = getMilitaryColor();
 }
 
-void MilitaryBuilding::render(SDL_Renderer* renderer) {
+void MilitaryBuilding::render(SDL_Renderer* renderer, TTF_Font* font) {
     if (!m_active || m_health <= 0) {
         return;
     }

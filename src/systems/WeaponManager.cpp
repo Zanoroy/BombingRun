@@ -29,6 +29,13 @@ void WeaponManager::update(float deltaTime) {
         }
     }
     
+    // Update all active bullets
+    for (auto& bullet : m_bullets) {
+        if (bullet) {
+            bullet->update(deltaTime);
+        }
+    }
+    
     // Note: Don't remove inactive bombs here
     // Let the game loop check for explosions first
     // Then call removeInactiveBombs() from Game after processing explosions
@@ -39,6 +46,13 @@ void WeaponManager::render(SDL_Renderer* renderer) {
     for (const auto& bomb : m_bombs) {
         if (bomb) {
             bomb->render(renderer);
+        }
+    }
+    
+    // Render all bullets
+    for (const auto& bullet : m_bullets) {
+        if (bullet) {
+            bullet->render(renderer);
         }
     }
 }
@@ -59,8 +73,25 @@ void WeaponManager::clearAllBombs() {
     resetBombCounts();
 }
 
+void WeaponManager::fireBullet(float x, float y, float velocityX, float velocityY) {
+    // Calculate target position from velocity (project 1 second ahead)
+    float targetX = x + velocityX;
+    float targetY = y + velocityY;
+    
+    auto bullet = std::make_unique<Bullet>(x, y, targetX, targetY);
+    // Note: Runway Y will be set by Game after creation if available
+    m_bullets.push_back(std::move(bullet));
+    
+    std::cout << "Fired bullet from (" << x << ", " << y << ") toward (" << targetX << ", " << targetY << ")" << std::endl;
+}
+
+void WeaponManager::clearAllBullets() {
+    m_bullets.clear();
+}
+
 void WeaponManager::cleanupInactiveBombs() {
     removeInactiveBombs();
+    removeInactiveBullets();
 }
 
 void WeaponManager::resetBombCounts() {
@@ -89,6 +120,17 @@ void WeaponManager::removeInactiveBombs() {
                 return !bomb || !bomb->isActive();
             }),
         m_bombs.end()
+    );
+}
+
+void WeaponManager::removeInactiveBullets() {
+    // Remove bullets that have expired or hit something
+    m_bullets.erase(
+        std::remove_if(m_bullets.begin(), m_bullets.end(),
+            [](const std::unique_ptr<Bullet>& bullet) {
+                return !bullet || !bullet->isActive();
+            }),
+        m_bullets.end()
     );
 }
 

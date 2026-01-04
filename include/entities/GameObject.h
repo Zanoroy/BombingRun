@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <memory>
 
 namespace BombingRun {
@@ -25,8 +26,9 @@ public:
     /**
      * @brief Render object to screen
      * @param renderer SDL renderer to draw with
+     * @param font Optional TTF font for text rendering
      */
-    virtual void render(SDL_Renderer* renderer) = 0;
+    virtual void render(SDL_Renderer* renderer, TTF_Font* font = nullptr) = 0;
 
     /**
      * @brief Check if object is active/alive

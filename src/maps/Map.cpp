@@ -41,14 +41,14 @@ bool Map::loadMap(const std::string& mapName) {
     return false;
 }
 
-void Map::render(SDL_Renderer* renderer) {
+void Map::render(SDL_Renderer* renderer, TTF_Font* font) {
     // Draw grass background
     SDL_SetRenderDrawColor(renderer, m_grassColor.r, m_grassColor.g, m_grassColor.b, 255);
     SDL_Rect grassRect = {0, 0, m_width, m_height};
     SDL_RenderFillRect(renderer, &grassRect);
     
     // Render buildings first (beneath roads)
-    m_buildingManager.render(renderer);
+    m_buildingManager.render(renderer, font);
     
     // Render all map objects (roads, rivers, etc.)
     for (const auto& obj : m_objects) {

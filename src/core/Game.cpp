@@ -113,6 +113,13 @@ bool Game::initialize(const std::string& title, int width, int height) {
         std::cerr << "Failed to load battleground map" << std::endl;
         return false;
     }
+    
+    // Set runway position for fighter jets
+    if (m_currentMap->getRunway()) {
+        float runwayX = m_currentMap->getRunway()->getX() + m_currentMap->getRunway()->getWidth() / 2.0f;
+        float runwayY = m_currentMap->getRunway()->getY() + m_currentMap->getRunway()->getHeight() / 2.0f;
+        m_aircraftManager.setRunwayPosition(runwayX, runwayY);
+    }
 
     m_running = true;
     m_lastFrameTime = SDL_GetTicks();
@@ -177,6 +184,10 @@ void Game::handleEvents() {
                     case SDLK_a:
                         std::cout << "A pressed - Deploy airstrike" << std::endl;
                         break;
+                    case SDLK_f:
+                        m_aircraftManager.spawnFighterJet();
+                        std::cout << "F pressed - Fighter jet deployed!" << std::endl;
+                        break;
                     case SDLK_1:
                     case SDLK_2:
                     case SDLK_3:
@@ -221,8 +232,61 @@ void Game::update(float deltaTime) {
     // Update aircraft (pass weapon manager so bombers can drop bombs)
     m_aircraftManager.update(deltaTime, &m_weaponManager);
     
-    // Update weapons (bombs)
+    // Update weapons (bombs and bullets)
     m_weaponManager.update(deltaTime);
+    
+    // Set runway Y position on all bullets
+    if (m_currentMap && m_currentMap->getRunway()) {
+        float runwayY = m_currentMap->getRunway()->getY();
+        for (const auto& bullet : m_weaponManager.getBullets()) {
+            if (bullet && bullet->isActive()) {
+                bullet->setRunwayY(runwayY);
+            }
+        }
+    }
+    
+    // Check bullet collisions with bombers
+    for (const auto& bullet : m_weaponManager.getBullets()) {
+        if (bullet && bullet->isActive()) {
+            Bomber* hitBomber = m_aircraftManager.checkBomberCollision(bullet->getX(), bullet->getY());
+            if (hitBomber) {
+                hitBomber->takeDamage(1);  // Bullets do 1 damage
+                bullet->markHit();  // Destroy the bullet
+                
+                // Check if bomber is destroyed
+                if (hitBomber->getHealth() <= 0) {
+                    std::cout << "Bomber destroyed by fighter jet!" << std::endl;
+                    hitBomber->destroy();
+                }
+            }
+            
+            // Check bullet collision with runway (missed shots can damage runway)
+            if (m_currentMap) {
+                Runway* runway = m_currentMap->getRunway();
+                if (runway) {
+                    float runwayX = runway->getX();
+                    float runwayY = runway->getY();
+                    float runwayWidth = runway->getWidth();
+                    float runwayHeight = runway->getHeight();
+                    
+                    // Expanded hit area to guarantee hits (3x width, 3x height)
+                    float hitWidth = runwayWidth * 3.0f;
+                    float hitHeight = runwayHeight * 3.0f;
+                    
+                    // Check if bullet hit runway (generous hitbox)
+                    if (bullet->getX() >= runwayX - hitWidth / 2 &&
+                        bullet->getX() <= runwayX + hitWidth / 2 &&
+                        bullet->getY() >= runwayY - hitHeight / 2 &&
+                        bullet->getY() <= runwayY + hitHeight / 2) {
+                        
+                        runway->takeDamage(1);  // Bullets do 1 damage to runway
+                        bullet->markHit();  // Destroy the bullet
+                        std::cout << "Bullet hit runway! HP: " << runway->getHealth() << "/" << runway->getMaxHealth() << std::endl;
+                    }
+                }
+            }
+        }
+    }
     
     // Check for bomb explosions AFTER updating (bombs have hit ground)
     for (const auto& bomb : m_weaponManager.getBombs()) {
@@ -248,10 +312,11 @@ void Game::update(float deltaTime) {
             );
             
             // Damage buildings within explosion radius
+            // Use scaled crater size for damage radius too!
             int destroyed = m_currentMap->damageBuildings(
                 bombX, 
                 bombY, 
-                craterSize * 2.5f,  // Damage radius is larger than visual crater
+                scaledCraterSize * 2.5f,  // Damage radius is larger than visual crater (scaled)
                 damage
             );
             
@@ -298,7 +363,7 @@ void Game::render() {
     
     // Render map (includes grass, roads, buildings, etc.)
     if (m_currentMap) {
-        m_currentMap->render(m_renderer);
+        m_currentMap->render(m_renderer, m_font);
     }
     
     // Render explosions and craters (after map, before other objects)

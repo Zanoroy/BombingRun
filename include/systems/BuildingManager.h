@@ -7,6 +7,7 @@
 #include <vector>
 #include <memory>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 namespace BombingRun {
 
@@ -57,8 +58,9 @@ public:
     /**
      * @brief Render all buildings
      * @param renderer SDL renderer
+     * @param font TTF font for text rendering (optional)
      */
-    void render(SDL_Renderer* renderer);
+    void render(SDL_Renderer* renderer, TTF_Font* font = nullptr);
 
     /**
      * @brief Check collision with a point (bomb impact)

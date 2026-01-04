@@ -85,7 +85,7 @@ void Bomb::update(float deltaTime) {
     }
 }
 
-void Bomb::render(SDL_Renderer* renderer) {
+void Bomb::render(SDL_Renderer* renderer, TTF_Font* font) {
     if (!m_active && !m_hitGround) {
         return;
     }

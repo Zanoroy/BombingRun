@@ -43,7 +43,7 @@ public:
      * @brief Render building with military-specific appearance
      * @param renderer SDL renderer
      */
-    void render(SDL_Renderer* renderer) override;
+    void render(SDL_Renderer* renderer, TTF_Font* font = nullptr) override;
 
     /**
      * @brief Take damage and notify runway if destroyed

@@ -1,5 +1,6 @@
 #include "entities/Runway.h"
 #include <algorithm>
+#include <string>
 
 namespace BombingRun {
 
@@ -16,7 +17,8 @@ Runway::Runway(float x, float y, float width, float height)
 }
 
 void Runway::update(float deltaTime) {
-    if (!m_active || m_health <= 0) {
+    // Don't regenerate if destroyed
+    if (m_health <= 0) {
         return;
     }
 
@@ -36,11 +38,9 @@ void Runway::update(float deltaTime) {
     }
 }
 
-void Runway::render(SDL_Renderer* renderer) {
-    if (!m_active) {
-        return;
-    }
-
+void Runway::render(SDL_Renderer* renderer, TTF_Font* font) {
+    // Always render runway, even when destroyed (don't check m_active)
+    
     // Get damage-based color
     SDL_Color color = getDamageColor();
     
@@ -75,13 +75,13 @@ void Runway::render(SDL_Renderer* renderer) {
         static_cast<int>(m_x + m_width) - edgeOffset, static_cast<int>(m_y + m_height));
     
     // Draw health bar above runway
-    int barWidth = 200;
-    int barHeight = 15;
+    int barWidth = 240;
+    int barHeight = 25;  // Increased height for larger text
     int barX = centerX - barWidth / 2;
-    int barY = static_cast<int>(m_y) - 30;
+    int barY = static_cast<int>(m_y) - 40;
     
     // Background
-    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 200);
+    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 220);
     SDL_Rect barBg = {barX, barY, barWidth, barHeight};
     SDL_RenderFillRect(renderer, &barBg);
     
@@ -108,6 +108,47 @@ void Runway::render(SDL_Renderer* renderer) {
     // Border
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderDrawRect(renderer, &barBg);
+    
+    // Draw HP text if font is available - larger and with shadow for visibility
+    if (font) {
+        std::string hpText = std::to_string(m_health) + "/" + std::to_string(m_maxHealth) + " HP";
+        SDL_Color textColor = {255, 255, 255, 255};
+        SDL_Surface* textSurface = TTF_RenderText_Blended(font, hpText.c_str(), textColor);
+        
+        if (textSurface) {
+            SDL_Texture* textTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
+            if (textTexture) {
+                // Draw shadow first (black text slightly offset)
+                SDL_Color shadowColor = {0, 0, 0, 255};
+                SDL_Surface* shadowSurface = TTF_RenderText_Blended(font, hpText.c_str(), shadowColor);
+                if (shadowSurface) {
+                    SDL_Texture* shadowTexture = SDL_CreateTextureFromSurface(renderer, shadowSurface);
+                    if (shadowTexture) {
+                        SDL_Rect shadowRect = {
+                            barX + (barWidth - textSurface->w) / 2 + 1,
+                            barY + (barHeight - textSurface->h) / 2 + 1,
+                            textSurface->w,
+                            textSurface->h
+                        };
+                        SDL_RenderCopy(renderer, shadowTexture, nullptr, &shadowRect);
+                        SDL_DestroyTexture(shadowTexture);
+                    }
+                    SDL_FreeSurface(shadowSurface);
+                }
+                
+                // Center text in health bar
+                SDL_Rect textRect = {
+                    barX + (barWidth - textSurface->w) / 2,
+                    barY + (barHeight - textSurface->h) / 2,
+                    textSurface->w,
+                    textSurface->h
+                };
+                SDL_RenderCopy(renderer, textTexture, nullptr, &textRect);
+                SDL_DestroyTexture(textTexture);
+            }
+            SDL_FreeSurface(textSurface);
+        }
+    }
 }
 
 bool Runway::takeDamage(int damage) {
@@ -122,7 +163,7 @@ bool Runway::takeDamage(int damage) {
     }
     
     if (m_health == 0) {
-        m_active = false;
+        // Keep m_active true so runway remains visible
         return true; // Runway destroyed
     }
     

@@ -20,7 +20,7 @@ void Building::update(float deltaTime) {
     }
 }
 
-void Building::render(SDL_Renderer* renderer) {
+void Building::render(SDL_Renderer* renderer, TTF_Font* font) {
     if (!m_active || m_health <= 0) {
         return;
     }
