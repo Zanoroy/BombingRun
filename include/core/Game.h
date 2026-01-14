@@ -12,6 +12,7 @@
 #include "systems/AudioManager.h"
 #include "entities/PlayerJet.h"
 #include "entities/Bullet.h"
+#include "entities/AAAGun.h"
 #include "maps/Map.h"
 #include "utils/PerformanceMonitor.h"
 #include "entities/Bomb.h"
@@ -142,6 +143,7 @@ private:
     float m_airstrikeTargetY;      // Target Y for airstrike
     GameState m_gameState;         // Current game state
     std::string m_selectedMap;     // Selected map ("city" or "battleground")
+    std::vector<std::unique_ptr<AAAGun>> m_aaaGuns;  // Anti-aircraft guns
     
     // PVP mode
     std::unique_ptr<PlayerJet> m_player1Jet;

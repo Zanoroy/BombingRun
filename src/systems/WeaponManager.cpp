@@ -73,12 +73,12 @@ void WeaponManager::clearAllBombs() {
     resetBombCounts();
 }
 
-void WeaponManager::fireBullet(float x, float y, float velocityX, float velocityY) {
+void WeaponManager::fireBullet(float x, float y, float velocityX, float velocityY, void* owner, float size) {
     // Calculate target position from velocity (project 1 second ahead)
     float targetX = x + velocityX;
     float targetY = y + velocityY;
     
-    auto bullet = std::make_unique<Bullet>(x, y, targetX, targetY);
+    auto bullet = std::make_unique<Bullet>(x, y, targetX, targetY, 800.0f, owner, size);
     // Note: Runway Y will be set by Game after creation if available
     m_bullets.push_back(std::move(bullet));
     

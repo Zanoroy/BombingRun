@@ -11,15 +11,15 @@ FighterJet::FighterJet(float x, float y, float runwayX, float runwayY)
     , m_health(5)
     , m_maxHealth(5)
     , m_bulletsRemaining(579)
-    , m_speed(400.0f)  // Faster than bombers
-    , m_fireRate(8.0f)  // 8 shots per second (increased from 3)
+    , m_speed(450.0f)  // Faster speed for aggressive circling
+    , m_fireRate(5.0f)  // 5 shots per second at runway
     , m_fireTimer(0.0f)
-    , m_accuracy(0.8f)  // 80% hit rate
+    , m_accuracy(1.0f)  // 100% hit rate on stationary runway
     , m_state(FighterState::SPAWNING)
     , m_target(nullptr)
     , m_runwayX(runwayX)
     , m_runwayY(runwayY)
-    , m_patrolRadius(300.0f)
+    , m_patrolRadius(250.0f)
     , m_patrolAngle(0.0f)
     , m_interceptX(0.0f)
     , m_interceptY(0.0f)
@@ -36,7 +36,7 @@ FighterJet::FighterJet(float x, float y, float runwayX, float runwayY)
     
     m_active = true;
     
-    std::cout << "Fighter jet created at (" << x << ", " << y << ")" << std::endl;
+    std::cout << "Fighter jet created at (" << x << ", " << y << ") - will patrol and attack runway" << std::endl;
 }
 
 bool FighterJet::loadSprites() {
@@ -72,8 +72,8 @@ void FighterJet::update(float deltaTime) {
             break;
     }
     
-    // Update angle based on velocity with smooth interpolation
-    if (m_velocityX != 0.0f || m_velocityY != 0.0f) {
+    // Update angle based on velocity with smooth interpolation (only for non-patrol states)
+    if (m_state != FighterState::PATROLLING && (m_velocityX != 0.0f || m_velocityY != 0.0f)) {
         float targetAngle = std::atan2(m_velocityY, m_velocityX) * 180.0f / M_PI + 90.0f;
         
         // Calculate shortest angle difference
@@ -103,8 +103,9 @@ void FighterJet::updateSpawning(float deltaTime) {
     float dy = m_patrolCenterY - m_y;
     float distance = std::sqrt(dx * dx + dy * dy);
     
-    if (distance < m_patrolRadius) {
-        // Reached patrol area - calculate current angle on circle
+    if (distance < m_patrolRadius * 1.2f) {
+        // Close to patrol area - start transitioning to circular motion
+        // Calculate current angle on circle
         float relativeX = m_x - m_patrolCenterX;
         float relativeY = m_y - m_patrolCenterY;
         m_patrolAngle = std::atan2(relativeY, relativeX);
@@ -114,17 +115,26 @@ void FighterJet::updateSpawning(float deltaTime) {
         return;
     }
     
-    // Move toward center
-    m_velocityX = (dx / distance) * m_speed;
-    m_velocityY = (dy / distance) * m_speed;
+    // Move toward center with smooth approach
+    float approachSpeed = m_speed;
+    
+    // Slow down as we get closer for smoother transition
+    if (distance < m_patrolRadius * 2.0f) {
+        float slowdownFactor = distance / (m_patrolRadius * 2.0f);
+        approachSpeed = m_speed * (0.5f + 0.5f * slowdownFactor);
+    }
+    
+    m_velocityX = (dx / distance) * approachSpeed;
+    m_velocityY = (dy / distance) * approachSpeed;
     
     m_x += m_velocityX * deltaTime;
     m_y += m_velocityY * deltaTime;
 }
 
 void FighterJet::updatePatrolling(float deltaTime) {
-    // Circle around the patrol center
-    float angularSpeed = 1.2f;  // radians per second (increased for faster circling)
+    // Circle around the patrol center (runway)
+    // Calculate angular speed from linear speed: angularSpeed = speed / radius
+    float angularSpeed = m_speed / m_patrolRadius;
     
     // Advance the patrol angle
     m_patrolAngle += deltaTime * angularSpeed;
@@ -138,7 +148,7 @@ void FighterJet::updatePatrolling(float deltaTime) {
     float targetY = m_patrolCenterY + m_patrolRadius * std::sin(m_patrolAngle);
     
     // Smoothly interpolate to the circle (for smooth entry from spawning)
-    float adjustSpeed = 5.0f;  // How quickly to converge to perfect circle
+    float adjustSpeed = 3.0f;  // How quickly to converge to perfect circle
     m_x += (targetX - m_x) * adjustSpeed * deltaTime;
     m_y += (targetY - m_y) * adjustSpeed * deltaTime;
     
@@ -146,6 +156,16 @@ void FighterJet::updatePatrolling(float deltaTime) {
     // For counterclockwise motion: vx = -sin(angle), vy = cos(angle)
     m_velocityX = -std::sin(m_patrolAngle) * m_patrolRadius * angularSpeed;
     m_velocityY = std::cos(m_patrolAngle) * m_patrolRadius * angularSpeed;
+    
+    // Calculate rotation angle from velocity to face direction of travel
+    // atan2 gives angle in radians, convert to degrees and add 90 for sprite orientation
+    m_angle = std::atan2(m_velocityY, m_velocityX) * 180.0f / M_PI + 90.0f;
+    
+    // Keep angle in 0-360 range
+    while (m_angle >= 360.0f) m_angle -= 360.0f;
+    while (m_angle < 0.0f) m_angle += 360.0f;
+    
+    // Note: Firing is handled by AircraftManager which calls fire() when timer is ready
     
     // If out of ammo, return to base
     if (m_bulletsRemaining <= 0) {
@@ -371,7 +391,11 @@ void FighterJet::setTarget(Bomber* target) {
 }
 
 bool FighterJet::fire() {
-    if (m_bulletsRemaining <= 0 || m_fireTimer > 0.0f) {
+    if (m_bulletsRemaining <= 0) {
+        return false;
+    }
+    
+    if (m_fireTimer > 0.0f) {
         return false;
     }
     

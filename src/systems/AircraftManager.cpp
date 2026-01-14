@@ -181,24 +181,21 @@ void AircraftManager::update(float deltaTime, WeaponManager* weaponManager) {
             
             // Handle bullet firing - ALL bullets target the runway
             if (weaponManager && m_runwaySet) {
-                // Check if fighter wants to fire
-                if (fighter->getRemainingBullets() > 0) {
+                // Attempt to fire (no distance restriction - can fire from anywhere on patrol)
+                if (fighter->fire()) {
                     // Calculate bullet velocity toward runway center
                     float dx = m_runwayX - fighter->getX();
                     float dy = m_runwayY - fighter->getY();
                     float distance = std::sqrt(dx * dx + dy * dy);
                     
-                    if (distance > 0.0f && distance < 800.0f) {
-                        // Attempt to fire
-                        if (fighter->fire()) {
-                            // Normalize direction and apply bullet speed (800 px/s)
-                            float bulletSpeed = 800.0f;
-                            float velX = (dx / distance) * bulletSpeed;
-                            float velY = (dy / distance) * bulletSpeed;
-                            
-                            // No spread - all bullets go directly to target (100% accuracy)
-                            weaponManager->fireBullet(fighter->getX(), fighter->getY(), velX, velY);
-                        }
+                    if (distance > 0.0f) {
+                        // Normalize direction and apply bullet speed (800 px/s)
+                        float bulletSpeed = 800.0f;
+                        float velX = (dx / distance) * bulletSpeed;
+                        float velY = (dy / distance) * bulletSpeed;
+                        
+                        // Pass fighter as owner to prevent self-collision
+                        weaponManager->fireBullet(fighter->getX(), fighter->getY(), velX, velY, fighter.get());
                     }
                 }
             }
@@ -294,36 +291,14 @@ void AircraftManager::spawnFighterJet() {
         return;
     }
     
-    // Spawn at edge of map
-    std::uniform_int_distribution<int> sideDist(0, 3);  // 0=top, 1=right, 2=bottom, 3=left
-    int side = sideDist(m_randomEngine);
-    
-    float spawnX = 0.0f;
-    float spawnY = 0.0f;
-    
-    switch (side) {
-        case 0: // Top
-            spawnX = m_runwayX;
-            spawnY = -50.0f;
-            break;
-        case 1: // Right
-            spawnX = m_screenWidth + 50.0f;
-            spawnY = m_runwayY;
-            break;
-        case 2: // Bottom
-            spawnX = m_runwayX;
-            spawnY = m_screenHeight + 50.0f;
-            break;
-        case 3: // Left
-            spawnX = -50.0f;
-            spawnY = m_runwayY;
-            break;
-    }
+    // Always spawn from bottom of map, centered on runway X position
+    float spawnX = m_runwayX;
+    float spawnY = m_screenHeight + 50.0f;  // Below screen
     
     auto fighter = std::make_unique<FighterJet>(spawnX, spawnY, m_runwayX, m_runwayY);
     m_fighters.push_back(std::move(fighter));
     
-    std::cout << "Fighter jet spawned at (" << spawnX << ", " << spawnY << ")" << std::endl;
+    std::cout << "Fighter jet spawned at (" << spawnX << ", " << spawnY << ") targeting runway at (" << m_runwayX << ", " << m_runwayY << ")" << std::endl;
 }
 
 int AircraftManager::getActiveFighterCount() const {

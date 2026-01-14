@@ -27,7 +27,7 @@ public:
     void cleanupInactiveBombs();  // Call after processing explosions
     
     // Bullet management
-    void fireBullet(float x, float y, float velocityX, float velocityY);
+    void fireBullet(float x, float y, float velocityX, float velocityY, void* owner = nullptr, float size = 6.0f);
     void clearAllBullets();
     
     // Getters

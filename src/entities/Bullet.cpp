@@ -3,12 +3,13 @@
 
 namespace BombingRun {
 
-Bullet::Bullet(float x, float y, float targetX, float targetY, float speed)
+Bullet::Bullet(float x, float y, float targetX, float targetY, float speed, void* owner, float size)
     : GameObject(x, y)
     , m_speed(speed)
     , m_lifetime(0.0f)
     , m_maxLifetime(3.0f)  // 3 seconds max lifetime
     , m_runwayY(10000.0f)  // Default far away
+    , m_owner(owner)  // Track who fired this bullet
 {
     // Calculate direction to target
     float dx = targetX - x;
@@ -28,8 +29,8 @@ Bullet::Bullet(float x, float y, float targetX, float targetY, float speed)
     m_velocityY = m_directionY * m_speed;
     
     // Bullet size
-    m_width = 6.0f;
-    m_height = 6.0f;
+    m_width = size;
+    m_height = size;
     
     m_active = true;
 }

@@ -194,7 +194,8 @@ void AAAGun::fire(WeaponManager* weaponManager) {
         float barrelEndX = m_x + std::cos(m_barrelAngle) * BARREL_LENGTH;
         float barrelEndY = m_y + std::sin(m_barrelAngle) * BARREL_LENGTH;
 
-        weaponManager->fireBullet(barrelEndX, barrelEndY, velX, velY);
+        // Fire larger AAA bullet (12.0f size vs default 6.0f)
+        weaponManager->fireBullet(barrelEndX, barrelEndY, velX, velY, nullptr, 12.0f);
         
         std::cout << "AAA fired at target! Vel: (" << velX << ", " << velY << ")" << std::endl;
     }

@@ -5,6 +5,8 @@
 
 namespace BombingRun {
 
+class FighterJet;  // Forward declaration
+
 /**
  * @brief Bullet fired by fighter jets at bombers
  * 
@@ -19,8 +21,10 @@ public:
      * @param targetX Target X position
      * @param targetY Target Y position
      * @param speed Bullet speed
+     * @param owner Pointer to the fighter that fired this bullet (optional)
+     * @param size Bullet size (width and height)
      */
-    Bullet(float x, float y, float targetX, float targetY, float speed = 800.0f);
+    Bullet(float x, float y, float targetX, float targetY, float speed = 800.0f, void* owner = nullptr, float size = 6.0f);
 
     /**
      * @brief Update bullet position
@@ -50,6 +54,19 @@ public:
      * @brief Set runway Y position for boundary checking
      */
     void setRunwayY(float runwayY) { m_runwayY = runwayY; }
+    
+    /**
+     * @brief Get the owner of this bullet (fighter that fired it)
+     * @return Pointer to owner fighter, or nullptr if no owner
+     */
+    void* getOwner() const { return m_owner; }
+    
+    /**
+     * @brief Check if bullet can hit the specified fighter
+     * @param fighter Pointer to fighter to check
+     * @return true if bullet can damage this fighter
+     */
+    bool canHit(void* fighter) const { return fighter != m_owner || m_lifetime > 0.1f; }
 
 private:
     float m_speed;              // Bullet speed
@@ -58,6 +75,7 @@ private:
     float m_lifetime;           // Time alive (for cleanup)
     float m_maxLifetime;        // Max time before auto-removal
     float m_runwayY;            // Runway Y position for boundary checking
+    void* m_owner;              // Pointer to fighter that fired this bullet (prevents self-hit)
 };
 
 } // namespace BombingRun

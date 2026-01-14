@@ -277,6 +277,30 @@ void Game::handleEvents() {
                             m_currentMap = std::make_unique<Map>(m_windowWidth, m_windowHeight);
                             m_currentMap->loadMap(m_selectedMap);
                             
+                            // Set runway position for aircraft manager if runway exists
+                            Runway* runway = m_currentMap->getRunway();
+                            if (runway) {
+                                m_aircraftManager.setRunwayPosition(runway->getX(), runway->getY());
+                                
+                                // Generate AAA guns around runway (only for military base)
+                                if (m_selectedMap == "battleground") {
+                                    m_aaaGuns.clear();
+                                    float runwayX = runway->getX();
+                                    float runwayY = runway->getY();
+                                    
+                                    // Place 6 AAA guns in a circle around the runway
+                                    const int numGuns = 6;
+                                    const float gunRadius = 300.0f;  // Distance from runway center
+                                    for (int i = 0; i < numGuns; i++) {
+                                        float angle = (2.0f * M_PI * i) / numGuns;
+                                        float gunX = runwayX + std::cos(angle) * gunRadius;
+                                        float gunY = runwayY + std::sin(angle) * gunRadius;
+                                        m_aaaGuns.push_back(std::make_unique<AAAGun>(gunX, gunY));
+                                    }
+                                    std::cout << "Generated " << numGuns << " AAA guns around runway" << std::endl;
+                                }
+                            }
+                            
                             std::cout << "Starting mission on " << m_selectedMap << " map!" << std::endl;
                         }
                         
@@ -340,6 +364,15 @@ void Game::update(float deltaTime) {
     // Update aircraft (pass weapon manager so bombers can drop bombs)
     m_aircraftManager.update(deltaTime, &m_weaponManager);
     
+    // Update AAA guns - they target bombers and fighters
+    for (auto& gun : m_aaaGuns) {
+        if (gun && gun->isActive()) {
+            auto bombers = m_aircraftManager.getActiveBombers();
+            auto fighters = m_aircraftManager.getActiveFighters();
+            gun->updateTargeting(deltaTime, bombers, fighters, &m_weaponManager);
+        }
+    }
+    
     // Update weapons (bombs and bullets)
     m_weaponManager.update(deltaTime);
     
@@ -370,7 +403,7 @@ void Game::update(float deltaTime) {
             
             // Check bullet collisions with fighters (AAA guns can shoot them down)
             FighterJet* hitFighter = m_aircraftManager.checkFighterCollision(bullet->getX(), bullet->getY());
-            if (hitFighter) {
+            if (hitFighter && bullet->canHit(hitFighter)) {  // Check if bullet can hit this fighter
                 float fighterX = hitFighter->getX();
                 float fighterY = hitFighter->getY();
                 bool destroyed = hitFighter->takeDamage(1);  // Bullets do 1 damage
@@ -393,9 +426,9 @@ void Game::update(float deltaTime) {
                     float runwayWidth = runway->getWidth();
                     float runwayHeight = runway->getHeight();
                     
-                    // Expanded hit area to guarantee hits (3x width, 3x height)
-                    float hitWidth = runwayWidth * 3.0f;
-                    float hitHeight = runwayHeight * 3.0f;
+                    // Accurate hit area matching runway size
+                    float hitWidth = runwayWidth * 1.0f;
+                    float hitHeight = runwayHeight * 1.0f;
                     
                     // Check if bullet hit runway (generous hitbox)
                     if (bullet->getX() >= runwayX - hitWidth / 2 &&
@@ -512,6 +545,13 @@ void Game::render() {
     
     // Render bombs
     m_weaponManager.render(m_renderer);
+    
+    // Render AAA guns
+    for (auto& gun : m_aaaGuns) {
+        if (gun && gun->isActive()) {
+            gun->render(m_renderer, m_font);
+        }
+    }
     
     // Render aircraft
     m_aircraftManager.render(m_renderer);

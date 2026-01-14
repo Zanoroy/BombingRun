@@ -101,9 +101,9 @@ private:
     
     GameObject* m_currentTarget; // Currently targeted aircraft (bomber or fighter)
 
-    static constexpr float FIRE_RATE = 2.0f;        // 2 shots per second
+    static constexpr float FIRE_RATE = 1.0f;        // 1 shot per second
     static constexpr float RANGE = 800.0f;          // 800 pixel range
-    static constexpr float BULLET_SPEED = 1000.0f;  // Bullet speed in px/s
+    static constexpr float BULLET_SPEED = 1200.0f;  // Bullet speed in px/s
     static constexpr float TRACER_DURATION = 0.15f; // Tracer visible for 0.15 seconds
     static constexpr float ROTATION_SPEED = 3.0f;   // Radians per second
     static constexpr int DAMAGE = 1;                // Damage per hit
