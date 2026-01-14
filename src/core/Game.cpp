@@ -27,6 +27,18 @@ Game::Game()
     , m_screenShakeDuration(0.0f)
     , m_screenShakeX(0.0f)
     , m_screenShakeY(0.0f)
+    , m_wPressed(false)
+    , m_sPressed(false)
+    , m_aPressed(false)
+    , m_dPressed(false)
+    , m_spacePressed(false)
+    , m_upPressed(false)
+    , m_downPressed(false)
+    , m_leftPressed(false)
+    , m_rightPressed(false)
+    , m_rctrlPressed(false)
+    , m_jetFightsGameOver(false)
+    , m_jetFightsWinner(0)
 {
 }
 
@@ -187,6 +199,44 @@ void Game::handleEvents() {
                 } else if (m_gameState == GameState::PVP) {
                     // PVP controls - no ESC exit during match
                     // Players handle their own controls in updatePVP()
+                } else if (m_gameState == GameState::JET_FIGHTS) {
+                    // Jet Fights controls
+                    switch (event.key.keysym.sym) {
+                        case SDLK_ESCAPE:
+                            m_gameState = GameState::MENU;
+                            std::cout << "Returning to menu..." << std::endl;
+                            break;
+                        case SDLK_w:
+                            m_wPressed = true;
+                            break;
+                        case SDLK_s:
+                            m_sPressed = true;
+                            break;
+                        case SDLK_a:
+                            m_aPressed = true;
+                            break;
+                        case SDLK_d:
+                            m_dPressed = true;
+                            break;
+                        case SDLK_SPACE:
+                            m_spacePressed = true;
+                            break;
+                        case SDLK_UP:
+                            m_upPressed = true;
+                            break;
+                        case SDLK_DOWN:
+                            m_downPressed = true;
+                            break;
+                        case SDLK_LEFT:
+                            m_leftPressed = true;
+                            break;
+                        case SDLK_RIGHT:
+                            m_rightPressed = true;
+                            break;
+                        case SDLK_RCTRL:
+                            m_rctrlPressed = true;
+                            break;
+                    }
                 } else if (m_gameState == GameState::PLAYING) {
                     // Bombing mode controls
                     switch (event.key.keysym.sym) {
@@ -225,6 +275,44 @@ void Game::handleEvents() {
                 }
                 break;
                 
+            case SDL_KEYUP:
+                // Handle key releases for Jet Fights mode
+                if (m_gameState == GameState::JET_FIGHTS) {
+                    switch (event.key.keysym.sym) {
+                        case SDLK_w:
+                            m_wPressed = false;
+                            break;
+                        case SDLK_s:
+                            m_sPressed = false;
+                            break;
+                        case SDLK_a:
+                            m_aPressed = false;
+                            break;
+                        case SDLK_d:
+                            m_dPressed = false;
+                            break;
+                        case SDLK_SPACE:
+                            m_spacePressed = false;
+                            break;
+                        case SDLK_UP:
+                            m_upPressed = false;
+                            break;
+                        case SDLK_DOWN:
+                            m_downPressed = false;
+                            break;
+                        case SDLK_LEFT:
+                            m_leftPressed = false;
+                            break;
+                        case SDLK_RIGHT:
+                            m_rightPressed = false;
+                            break;
+                        case SDLK_RCTRL:
+                            m_rctrlPressed = false;
+                            break;
+                    }
+                }
+                break;
+                
             case SDL_MOUSEMOTION:
                 // Track mouse position
                 m_mouseX = event.motion.x;
@@ -242,7 +330,7 @@ void Game::handleEvents() {
                         int boxWidth = 280;
                         int boxHeight = 220;
                         int spacing = 40;
-                        int y = 260;  // Match renderMenu position
+                        int y = 290;  // Match renderMenu position (boxY=200 + 30 + 60)
                         
                         // City Strike box
                         int cityX = m_windowWidth/2 - boxWidth - spacing/2;
@@ -304,20 +392,84 @@ void Game::handleEvents() {
                             std::cout << "Starting mission on " << m_selectedMap << " map!" << std::endl;
                         }
                         
-                        // PVP Dogfight button
+                        // Jet Fights button
                         int pvpX = m_windowWidth/2 + buttonSpacing/2;
                         SDL_Rect pvpRect = {pvpX, buttonY, buttonWidth, buttonHeight};
                         if (isMouseOver(clickX, clickY, pvpRect)) {
                             m_audioManager.playSound(AudioManager::SoundEffect::MENU_CLICK);
-                            m_gameState = GameState::PVP;
+                            m_gameState = GameState::JET_FIGHTS;
                             
-                            // Initialize PVP mode - spawn two player jets
-                            m_player1Jet = std::make_unique<PlayerJet>(500.0f, 500.0f, PlayerJet::Player::PLAYER1);
-                            m_player2Jet = std::make_unique<PlayerJet>(2500.0f, 2500.0f, PlayerJet::Player::PLAYER2);
-                            m_pvpBullets.clear();
+                            // Initialize Jet Fights mode - spawn jets above and below centerline
+                            float centerY = m_windowHeight / 2.0f;
+                            float offsetY = 18.0f;  // Offset so they're close to line but don't collide
                             
-                            std::cout << "Starting PVP Dogfight!" << std::endl;
-                            std::cout << "Player 1: WASD + Space | Player 2: Arrows + Enter" << std::endl;
+                            m_playerControlledJet = std::make_unique<PlayerControlledJet>(
+                                m_windowWidth / 4.0f,      // Left side
+                                centerY - offsetY          // Just above centerline
+                            );
+                            m_player2ControlledJet = std::make_unique<Player2Jet>(
+                                m_windowWidth * 3.0f / 4.0f,  // Right side
+                                centerY + offsetY             // Just below centerline
+                            );
+                            m_wPressed = false;
+                            m_sPressed = false;
+                            m_aPressed = false;
+                            m_dPressed = false;
+                            m_spacePressed = false;
+                            m_upPressed = false;
+                            m_downPressed = false;
+                            m_leftPressed = false;
+                            m_rightPressed = false;
+                            m_rctrlPressed = false;
+                            m_jetFightsBullets.clear();
+                            m_jetFightsGameOver = false;
+                            m_jetFightsWinner = 0;
+                            
+                            std::cout << "Starting Jet Fights mode!" << std::endl;
+                            std::cout << "Controls: WASD (W/S=Thrust, A/D=Turn)" << std::endl;
+                        }
+                        
+                    } else if (m_gameState == GameState::JET_FIGHTS) {
+                        // Check for restart button click when game is over
+                        if (m_jetFightsGameOver) {
+                            int clickX = event.button.x;
+                            int clickY = event.button.y;
+                            int buttonWidth = 300;
+                            int buttonHeight = 80;
+                            int buttonX = m_windowWidth/2 - buttonWidth/2;
+                            int buttonY = m_windowHeight/2 + 80;
+                            SDL_Rect restartRect = {buttonX, buttonY, buttonWidth, buttonHeight};
+                            
+                            if (isMouseOver(clickX, clickY, restartRect)) {
+                                // Restart Jet Fights mode
+                                float centerY = m_windowHeight / 2.0f;
+                                float offsetY = 18.0f;
+                                
+                                m_playerControlledJet = std::make_unique<PlayerControlledJet>(
+                                    m_windowWidth / 4.0f,
+                                    centerY - offsetY
+                                );
+                                m_player2ControlledJet = std::make_unique<Player2Jet>(
+                                    m_windowWidth * 3.0f / 4.0f,
+                                    centerY + offsetY
+                                );
+                                m_wPressed = false;
+                                m_sPressed = false;
+                                m_aPressed = false;
+                                m_dPressed = false;
+                                m_spacePressed = false;
+                                m_upPressed = false;
+                                m_downPressed = false;
+                                m_leftPressed = false;
+                                m_rightPressed = false;
+                                m_rctrlPressed = false;
+                                m_jetFightsBullets.clear();
+                                m_weaponManager.clearAllBullets();
+                                m_jetFightsGameOver = false;
+                                m_jetFightsWinner = 0;
+                                
+                                std::cout << "Restarting Jet Fights!" << std::endl;
+                            }
                         }
                         
                     } else if (m_gameState == GameState::PLAYING) {
@@ -357,6 +509,11 @@ void Game::update(float deltaTime) {
     
     if (m_gameState == GameState::PVP) {
         updatePVP(deltaTime);
+        return;
+    }
+    
+    if (m_gameState == GameState::JET_FIGHTS) {
+        updateJetFights(deltaTime);
         return;
     }
     
@@ -481,6 +638,20 @@ void Game::update(float deltaTime) {
                 std::cout << "Explosion destroyed " << destroyed << " building(s)" << std::endl;
             }
             
+            // Check AAA gun damage within explosion radius
+            float damageRadius = scaledCraterSize * 2.5f;
+            for (auto& gun : m_aaaGuns) {
+                if (gun && gun->isActive()) {
+                    float dx = gun->getX() - bombX;
+                    float dy = gun->getY() - bombY;
+                    float dist = std::sqrt(dx * dx + dy * dy);
+                    
+                    if (dist <= damageRadius) {
+                        gun->takeDamage(damage);
+                    }
+                }
+            }
+            
             // Mark bomb as exploded so it doesn't explode again next frame
             bomb->markExploded();
         }
@@ -526,6 +697,12 @@ void Game::render() {
     
     if (m_gameState == GameState::PVP) {
         renderPVP();
+        SDL_RenderPresent(m_renderer);
+        return;
+    }
+    
+    if (m_gameState == GameState::JET_FIGHTS) {
+        renderJetFights();
         SDL_RenderPresent(m_renderer);
         return;
     }
@@ -1099,8 +1276,8 @@ void Game::renderMenu() {
     SDL_Rect innerPvpBorder = {pvpX + 1, y - pvpOffset + 1, buttonWidth - 2, buttonHeight - 2};
     SDL_RenderDrawRect(m_renderer, &innerPvpBorder);
     
-    // PVP Button text
-    SDL_Surface* pvpSurface = TTF_RenderText_Blended(m_font, "PVP DOGFIGHT", white);
+    // Jet Fights button text
+    SDL_Surface* pvpSurface = TTF_RenderText_Blended(m_font, "JET FIGHTS", white);
     if (pvpSurface) {
         SDL_Texture* pvpTexture = SDL_CreateTextureFromSurface(m_renderer, pvpSurface);
         int pvpTextWidth = pvpSurface->w * 1.3;
@@ -1457,6 +1634,345 @@ void Game::renderDefeat(int drawFlag) {
     }
     
     SDL_RenderPresent(m_renderer);
+}
+
+void Game::updateJetFights(float deltaTime) {
+    if (!m_playerControlledJet || !m_player2ControlledJet) return;
+    
+    // === PLAYER 1 (BLUE - WASD + SPACE) ===
+    m_playerControlledJet->handleInput(m_wPressed, m_sPressed, m_aPressed, m_dPressed, m_spacePressed);
+    
+    // Handle Player 1 shooting when spacebar is held down
+    if (m_spacePressed && m_playerControlledJet->fire()) {
+        // Calculate bullet spawn position at jet's nose
+        float jet1X = m_playerControlledJet->getX();
+        float jet1Y = m_playerControlledJet->getY();
+        float jet1Angle = m_playerControlledJet->getRotation();
+        float noseDistance = 20.0f; // Distance from center to nose
+        
+        float spawn1X = jet1X + std::cos(jet1Angle) * noseDistance;
+        float spawn1Y = jet1Y + std::sin(jet1Angle) * noseDistance;
+        
+        // Calculate bullet velocity (1500 px/s in jet's direction)
+        float bulletSpeed = 1500.0f;
+        float vel1X = std::cos(jet1Angle) * bulletSpeed;
+        float vel1Y = std::sin(jet1Angle) * bulletSpeed;
+        
+        // Create bullet
+        m_weaponManager.fireBullet(spawn1X, spawn1Y, vel1X, vel1Y, m_playerControlledJet.get(), 6.0f);
+    }
+    
+    // === PLAYER 2 (RED - ARROW KEYS + RIGHT CTRL) ===
+    m_player2ControlledJet->handleInput(m_upPressed, m_downPressed, m_leftPressed, m_rightPressed, m_rctrlPressed);
+    
+    // Handle Player 2 shooting when right ctrl is held down
+    if (m_rctrlPressed && m_player2ControlledJet->fire()) {
+        // Calculate bullet spawn position at jet's nose
+        float jet2X = m_player2ControlledJet->getX();
+        float jet2Y = m_player2ControlledJet->getY();
+        float jet2Angle = m_player2ControlledJet->getRotation();
+        float noseDistance = 20.0f; // Distance from center to nose
+        
+        float spawn2X = jet2X + std::cos(jet2Angle) * noseDistance;
+        float spawn2Y = jet2Y + std::sin(jet2Angle) * noseDistance;
+        
+        // Calculate bullet velocity (1500 px/s in jet's direction)
+        float bulletSpeed = 1500.0f;
+        float vel2X = std::cos(jet2Angle) * bulletSpeed;
+        float vel2Y = std::sin(jet2Angle) * bulletSpeed;
+        
+        // Create bullet
+        m_weaponManager.fireBullet(spawn2X, spawn2Y, vel2X, vel2Y, m_player2ControlledJet.get(), 6.0f);
+    }
+    
+    // Update jet physics
+    m_playerControlledJet->update(deltaTime);
+    m_player2ControlledJet->update(deltaTime);
+    
+    // Update bullets
+    m_weaponManager.update(deltaTime);
+    
+    // Check jet-to-jet collision (both jets destroyed if they collide)
+    if (m_playerControlledJet->isActive() && m_player2ControlledJet->isActive()) {
+        float dx = m_playerControlledJet->getX() - m_player2ControlledJet->getX();
+        float dy = m_playerControlledJet->getY() - m_player2ControlledJet->getY();
+        float dist = std::sqrt(dx * dx + dy * dy);
+        
+        // Collision radius (sum of jet sizes ~30 pixels)
+        if (dist < 30.0f) {
+            std::cout << "JET COLLISION! Both jets destroyed!" << std::endl;
+            m_playerControlledJet->destroy();
+            m_player2ControlledJet->destroy();
+            m_jetFightsGameOver = true;
+            m_jetFightsWinner = 0;  // 0 = DRAW
+        }
+    }
+    
+    // Check bullet collisions with jets
+    const auto& bullets = m_weaponManager.getBullets();
+    for (const auto& bullet : bullets) {
+        if (!bullet->isActive()) continue;
+        
+        float bulletX = bullet->getX();
+        float bulletY = bullet->getY();
+        
+        // Check collision with Player 1 (blue jet)
+        if (m_playerControlledJet->isActive()) {
+            float dx1 = bulletX - m_playerControlledJet->getX();
+            float dy1 = bulletY - m_playerControlledJet->getY();
+            float dist1 = std::sqrt(dx1 * dx1 + dy1 * dy1);
+            
+            // Only damage if bullet not owned by this jet
+            if (dist1 < 20.0f && bullet->canHit(m_playerControlledJet.get())) {
+                m_playerControlledJet->takeDamage(1);
+                bullet->destroy();
+            }
+        }
+        
+        // Check collision with Player 2 (red jet)
+        if (m_player2ControlledJet->isActive()) {
+            float dx2 = bulletX - m_player2ControlledJet->getX();
+            float dy2 = bulletY - m_player2ControlledJet->getY();
+            float dist2 = std::sqrt(dx2 * dx2 + dy2 * dy2);
+            
+            // Only damage if bullet not owned by this jet
+            if (dist2 < 20.0f && bullet->canHit(m_player2ControlledJet.get())) {
+                m_player2ControlledJet->takeDamage(1);
+                bullet->destroy();
+            }
+        }
+    }
+    
+    // Check if game is over
+    if (!m_jetFightsGameOver) {
+        bool p1Active = m_playerControlledJet->isActive();
+        bool p2Active = m_player2ControlledJet->isActive();
+        
+        if (!p1Active && !p2Active) {
+            // Both destroyed at same time (shouldn't happen with collision, but just in case)
+            m_jetFightsGameOver = true;
+            m_jetFightsWinner = 0;  // DRAW
+        } else if (!p1Active) {
+            // Player 1 destroyed, Player 2 wins
+            m_jetFightsGameOver = true;
+            m_jetFightsWinner = 2;
+        } else if (!p2Active) {
+            // Player 2 destroyed, Player 1 wins
+            m_jetFightsGameOver = true;
+            m_jetFightsWinner = 1;
+        }
+    }
+    
+    // Wrap around screen edges for Player 1 (ocean is infinite)
+    float jet1X = m_playerControlledJet->getX();
+    float jet1Y = m_playerControlledJet->getY();
+    
+    if (jet1X < 0) {
+        m_playerControlledJet->setPosition(m_windowWidth, jet1Y);
+    } else if (jet1X > m_windowWidth) {
+        m_playerControlledJet->setPosition(0, jet1Y);
+    }
+    
+    if (jet1Y < 0) {
+        m_playerControlledJet->setPosition(jet1X, m_windowHeight);
+    } else if (jet1Y > m_windowHeight) {
+        m_playerControlledJet->setPosition(jet1X, 0);
+    }
+    
+    // Wrap around screen edges for Player 2
+    float jet2X = m_player2ControlledJet->getX();
+    float jet2Y = m_player2ControlledJet->getY();
+    
+    if (jet2X < 0) {
+        m_player2ControlledJet->setPosition(m_windowWidth, jet2Y);
+    } else if (jet2X > m_windowWidth) {
+        m_player2ControlledJet->setPosition(0, jet2Y);
+    }
+    
+    if (jet2Y < 0) {
+        m_player2ControlledJet->setPosition(jet2X, m_windowHeight);
+    } else if (jet2Y > m_windowHeight) {
+        m_player2ControlledJet->setPosition(jet2X, 0);
+    }
+}
+
+void Game::renderJetFights() {
+    // Clear screen with ocean blue color
+    SDL_SetRenderDrawColor(m_renderer, 25, 55, 95, 255);  // Medium ocean blue
+    SDL_RenderClear(m_renderer);
+    
+    // Draw ocean wave pattern (lighter blue lines)
+    SDL_SetRenderDrawColor(m_renderer, 40, 80, 130, 255);  // Lighter blue for contrast
+    for (int y = 0; y < m_windowHeight; y += 50) {
+        SDL_RenderDrawLine(m_renderer, 0, y, m_windowWidth, y);
+    }
+    for (int x = 0; x < m_windowWidth; x += 50) {
+        SDL_RenderDrawLine(m_renderer, x, 0, x, m_windowHeight);
+    }
+    
+    // Draw invisible centerline (very thin, subtle)
+    int centerY = m_windowHeight / 2;
+    SDL_SetRenderDrawColor(m_renderer, 50, 90, 140, 128);  // Very subtle, semi-transparent
+    SDL_RenderDrawLine(m_renderer, 0, centerY, m_windowWidth, centerY);
+    
+    // Draw title at top
+    if (m_font) {
+        SDL_Color white = {255, 255, 255, 255};
+        
+        std::string titleText = "JET FIGHTS - Ocean Mode";
+        SDL_Surface* titleSurface = TTF_RenderText_Blended(m_font, titleText.c_str(), white);
+        if (titleSurface) {
+            SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(m_renderer, titleSurface);
+            SDL_Rect titleRect = {m_windowWidth/2 - titleSurface->w, 20, titleSurface->w * 2, titleSurface->h * 2};
+            SDL_RenderCopy(m_renderer, titleTexture, nullptr, &titleRect);
+            SDL_DestroyTexture(titleTexture);
+            SDL_FreeSurface(titleSurface);
+        }
+    }
+    
+    // Render player 1 jet (blue)
+    if (m_playerControlledJet && m_playerControlledJet->isActive()) {
+        m_playerControlledJet->render(m_renderer, m_font);
+    }
+    
+    // Render player 2 jet (red)
+    if (m_player2ControlledJet && m_player2ControlledJet->isActive()) {
+        m_player2ControlledJet->render(m_renderer, m_font);
+    }
+    
+    // Render bullets
+    m_weaponManager.render(m_renderer);
+    
+    // Draw control instructions
+    if (m_font) {
+        SDL_Color white = {255, 255, 255, 255};
+        
+        std::string p1Controls = "P1: WASD + SPACE";
+        SDL_Surface* p1Surface = TTF_RenderText_Blended(m_font, p1Controls.c_str(), white);
+        if (p1Surface) {
+            SDL_Texture* p1Texture = SDL_CreateTextureFromSurface(m_renderer, p1Surface);
+            SDL_Rect p1Rect = {20, m_windowHeight - 80, p1Surface->w, p1Surface->h};
+            SDL_RenderCopy(m_renderer, p1Texture, nullptr, &p1Rect);
+            SDL_DestroyTexture(p1Texture);
+            SDL_FreeSurface(p1Surface);
+        }
+        
+        std::string p2Controls = "P2: ARROWS + RIGHT CTRL";
+        SDL_Surface* p2Surface = TTF_RenderText_Blended(m_font, p2Controls.c_str(), white);
+        if (p2Surface) {
+            SDL_Texture* p2Texture = SDL_CreateTextureFromSurface(m_renderer, p2Surface);
+            SDL_Rect p2Rect = {20, m_windowHeight - 50, p2Surface->w, p2Surface->h};
+            SDL_RenderCopy(m_renderer, p2Texture, nullptr, &p2Rect);
+            SDL_DestroyTexture(p2Texture);
+            SDL_FreeSurface(p2Surface);
+        }
+        
+        std::string controlText = "ESC=Menu";
+        SDL_Surface* surface = TTF_RenderText_Blended(m_font, controlText.c_str(), white);
+        if (surface) {
+            SDL_Texture* texture = SDL_CreateTextureFromSurface(m_renderer, surface);
+            SDL_Rect rect = {m_windowWidth/2 - surface->w/2, m_windowHeight - 40, surface->w, surface->h};
+            SDL_RenderCopy(m_renderer, texture, nullptr, &rect);
+            SDL_DestroyTexture(texture);
+            SDL_FreeSurface(surface);
+        }
+        
+        // Display Player 1 Health (blue)
+        SDL_Color blue = {100, 150, 255, 255};
+        if (m_playerControlledJet && m_playerControlledJet->isActive()) {
+            std::string p1Health = "Player 1 HP: " + std::to_string(m_playerControlledJet->getHealth()) + "/5";
+            SDL_Surface* p1HealthSurface = TTF_RenderText_Blended(m_font, p1Health.c_str(), blue);
+            if (p1HealthSurface) {
+                SDL_Texture* p1HealthTexture = SDL_CreateTextureFromSurface(m_renderer, p1HealthSurface);
+                SDL_Rect p1HealthRect = {20, 90, p1HealthSurface->w, p1HealthSurface->h};
+                SDL_RenderCopy(m_renderer, p1HealthTexture, nullptr, &p1HealthRect);
+                SDL_DestroyTexture(p1HealthTexture);
+                SDL_FreeSurface(p1HealthSurface);
+            }
+        }
+        
+        // Display Player 2 Health (red)
+        SDL_Color red = {255, 100, 100, 255};
+        if (m_player2ControlledJet && m_player2ControlledJet->isActive()) {
+            std::string p2Health = "Player 2 HP: " + std::to_string(m_player2ControlledJet->getHealth()) + "/5";
+            SDL_Surface* p2HealthSurface = TTF_RenderText_Blended(m_font, p2Health.c_str(), red);
+            if (p2HealthSurface) {
+                SDL_Texture* p2HealthTexture = SDL_CreateTextureFromSurface(m_renderer, p2HealthSurface);
+                SDL_Rect p2HealthRect = {m_windowWidth - 250, 90, p2HealthSurface->w, p2HealthSurface->h};
+                SDL_RenderCopy(m_renderer, p2HealthTexture, nullptr, &p2HealthRect);
+                SDL_DestroyTexture(p2HealthTexture);
+                SDL_FreeSurface(p2HealthSurface);
+            }
+        }
+        
+        // Game Over Screen
+        if (m_jetFightsGameOver) {
+            // Semi-transparent overlay
+            SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 180);
+            SDL_Rect overlay = {0, 0, m_windowWidth, m_windowHeight};
+            SDL_RenderFillRect(m_renderer, &overlay);
+            
+            // Display winner text (BIG)
+            SDL_Color winnerColor = {255, 255, 0, 255};  // Yellow
+            std::string winnerText;
+            if (m_jetFightsWinner == 0) {
+                winnerText = "DRAW";
+            } else if (m_jetFightsWinner == 1) {
+                winnerText = "PLAYER 1 WINS!";
+                winnerColor = {100, 150, 255, 255};  // Blue
+            } else {
+                winnerText = "PLAYER 2 WINS!";
+                winnerColor = {255, 100, 100, 255};  // Red
+            }
+            
+            SDL_Surface* winnerSurface = TTF_RenderText_Blended(m_font, winnerText.c_str(), winnerColor);
+            if (winnerSurface) {
+                SDL_Texture* winnerTexture = SDL_CreateTextureFromSurface(m_renderer, winnerSurface);
+                // Make it 4x bigger
+                SDL_Rect winnerRect = {
+                    m_windowWidth/2 - (winnerSurface->w * 2),
+                    m_windowHeight/2 - 150,
+                    winnerSurface->w * 4,
+                    winnerSurface->h * 4
+                };
+                SDL_RenderCopy(m_renderer, winnerTexture, nullptr, &winnerRect);
+                SDL_DestroyTexture(winnerTexture);
+                SDL_FreeSurface(winnerSurface);
+            }
+            
+            // Restart button
+            int buttonWidth = 300;
+            int buttonHeight = 80;
+            int buttonX = m_windowWidth/2 - buttonWidth/2;
+            int buttonY = m_windowHeight/2 + 80;
+            
+            // Button background
+            SDL_SetRenderDrawColor(m_renderer, 70, 130, 180, 255);
+            SDL_Rect buttonRect = {buttonX, buttonY, buttonWidth, buttonHeight};
+            SDL_RenderFillRect(m_renderer, &buttonRect);
+            
+            // Button border
+            SDL_SetRenderDrawColor(m_renderer, 255, 255, 255, 255);
+            SDL_RenderDrawRect(m_renderer, &buttonRect);
+            
+            // Button text
+            std::string restartText = "RESTART";
+            SDL_Surface* restartSurface = TTF_RenderText_Blended(m_font, restartText.c_str(), white);
+            if (restartSurface) {
+                SDL_Texture* restartTexture = SDL_CreateTextureFromSurface(m_renderer, restartSurface);
+                SDL_Rect textRect = {
+                    buttonX + buttonWidth/2 - (restartSurface->w * 2)/2,
+                    buttonY + buttonHeight/2 - (restartSurface->h * 2)/2,
+                    restartSurface->w * 2,
+                    restartSurface->h * 2
+                };
+                SDL_RenderCopy(m_renderer, restartTexture, nullptr, &textRect);
+                SDL_DestroyTexture(restartTexture);
+                SDL_FreeSurface(restartSurface);
+            }
+        }
+    }
 }
 
 

@@ -68,6 +68,22 @@ public:
      */
     float getBarrelAngle() const { return m_barrelAngle; }
 
+    /**
+     * @brief Take damage from explosion
+     * @param damage Amount of damage to take
+     */
+    void takeDamage(int damage);
+
+    /**
+     * @brief Get current health
+     */
+    int getHealth() const { return m_health; }
+
+    /**
+     * @brief Get maximum health
+     */
+    int getMaxHealth() const { return MAX_HEALTH; }
+
 private:
     /**
      * @brief Calculate predicted intercept point for moving target
@@ -100,6 +116,7 @@ private:
     float m_muzzleFlashTimer;    // Timer for muzzle flash visual effect
     
     GameObject* m_currentTarget; // Currently targeted aircraft (bomber or fighter)
+    int m_health;                // Current health points
 
     static constexpr float FIRE_RATE = 1.0f;        // 1 shot per second
     static constexpr float RANGE = 800.0f;          // 800 pixel range
@@ -107,6 +124,7 @@ private:
     static constexpr float TRACER_DURATION = 0.15f; // Tracer visible for 0.15 seconds
     static constexpr float ROTATION_SPEED = 3.0f;   // Radians per second
     static constexpr int DAMAGE = 1;                // Damage per hit
+    static constexpr int MAX_HEALTH = 3;            // Takes 3 hits to destroy
 };
 
 } // namespace BombingRun

@@ -21,6 +21,7 @@ AAAGun::AAAGun(float x, float y)
     , m_isFiring(false)
     , m_muzzleFlashTimer(0.0f)
     , m_currentTarget(nullptr)
+    , m_health(MAX_HEALTH)
 {
     m_active = true;
 }
@@ -245,6 +246,17 @@ void AAAGun::render(SDL_Renderer* renderer, TTF_Font* font) {
                 }
             }
         }
+    }
+}
+
+void AAAGun::takeDamage(int damage) {
+    m_health -= damage;
+    if (m_health <= 0) {
+        m_health = 0;
+        m_active = false;
+        std::cout << "AAA Gun destroyed at (" << m_x << ", " << m_y << ")!" << std::endl;
+    } else {
+        std::cout << "AAA Gun hit! Health: " << m_health << "/" << MAX_HEALTH << std::endl;
     }
 }
 

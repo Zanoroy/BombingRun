@@ -13,6 +13,8 @@
 #include "entities/PlayerJet.h"
 #include "entities/Bullet.h"
 #include "entities/AAAGun.h"
+#include "entities/PlayerControlledJet.h"
+#include "entities/Player2Jet.h"
 #include "maps/Map.h"
 #include "utils/PerformanceMonitor.h"
 #include "entities/Bomb.h"
@@ -93,6 +95,16 @@ private:
     void updatePVP(float deltaTime);
 
     /**
+     * @brief Render Jet Fights mode
+     */
+    void renderJetFights();
+
+    /**
+     * @brief Update Jet Fights mode
+     */
+    void updateJetFights(float deltaTime);
+
+    /**
      * @brief Render HUD elements
      */
     void renderHUD();
@@ -150,6 +162,23 @@ private:
     std::unique_ptr<PlayerJet> m_player2Jet;
     std::vector<std::unique_ptr<Bullet>> m_pvpBullets;
     int m_pvpMapSize;              // Size of PVP ocean map
+    
+    // Jet Fights mode
+    std::unique_ptr<PlayerControlledJet> m_playerControlledJet;
+    std::unique_ptr<Player2Jet> m_player2ControlledJet;
+    std::vector<std::unique_ptr<Bullet>> m_jetFightsBullets;
+    bool m_wPressed;
+    bool m_sPressed;
+    bool m_aPressed;
+    bool m_dPressed;
+    bool m_spacePressed;
+    bool m_upPressed;
+    bool m_downPressed;
+    bool m_leftPressed;
+    bool m_rightPressed;
+    bool m_rctrlPressed;
+    bool m_jetFightsGameOver;
+    int m_jetFightsWinner;  // 0=draw, 1=player1, 2=player2
     
     // Screen shake effects
     float m_screenShakeIntensity;  // Current shake intensity
