@@ -23,6 +23,33 @@
 namespace BombingRun {
 
 /**
+ * @brief Game difficulty levels
+ */
+enum class Difficulty {
+    EASY,
+    NORMAL,
+    HARD
+};
+
+/**
+ * @brief Optional mission objectives
+ */
+struct Mission {
+    std::string name;
+    std::string description;
+    bool completed;
+    bool failed;
+    
+    // Mission tracking variables
+    int targetCount;
+    int currentCount;
+    bool trackAAA;  // Track AAA gun destruction
+    bool prohibitAAA;  // Fail if AAA destroyed
+    float timeLimit;  // Time limit in seconds (0 = no limit)
+    float timeElapsed;
+};
+
+/**
  * @brief Main game controller managing the game loop and window
  * 
  * Handles initialization, main game loop, event processing,
@@ -122,6 +149,26 @@ private:
     void renderDefeat(int drawFlag);
     
     /**
+     * @brief Render pause menu
+     */
+    void renderPauseMenu();
+    
+    /**
+     * @brief Initialize mission objectives
+     */
+    void initializeMissions();
+    
+    /**
+     * @brief Update mission progress
+     */
+    void updateMissions();
+    
+    /**
+     * @brief Render mission objectives
+     */
+    void renderMissions();
+    
+    /**
      * @brief Check if mouse is over a rectangle
      */
     bool isMouseOver(int mouseX, int mouseY, const SDL_Rect& rect);
@@ -179,6 +226,32 @@ private:
     bool m_rctrlPressed;
     bool m_jetFightsGameOver;
     int m_jetFightsWinner;  // 0=draw, 1=player1, 2=player2
+    
+    // Difficulty and missions
+    Difficulty m_difficulty;
+    std::vector<Mission> m_missions;
+    int m_aaaGunsDestroyedThisGame;
+    int m_buildingsDestroyedThisGame;
+    int m_bombersLostThisGame;
+    float m_gameTime;
+    
+    // Trail effects
+    struct TrailParticle {
+        float x, y;
+        float lifetime;
+        float maxLifetime;
+    };
+    std::vector<TrailParticle> m_trailParticles;
+    
+    // Smoke effects
+    struct SmokeParticle {
+        float x, y;
+        float vx, vy;
+        float lifetime;
+        float maxLifetime;
+        int alpha;
+    };
+    std::vector<SmokeParticle> m_smokeParticles;
     
     // Screen shake effects
     float m_screenShakeIntensity;  // Current shake intensity

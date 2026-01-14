@@ -39,7 +39,14 @@ Game::Game()
     , m_rctrlPressed(false)
     , m_jetFightsGameOver(false)
     , m_jetFightsWinner(0)
+    , m_difficulty(Difficulty::NORMAL)
+    , m_aaaGunsDestroyedThisGame(0)
+    , m_buildingsDestroyedThisGame(0)
+    , m_bombersLostThisGame(0)
+    , m_gameTime(0.0f)
 {
+    // Initialize mission objectives
+    initializeMissions();
 }
 
 Game::~Game() {
@@ -113,6 +120,11 @@ bool Game::initialize(const std::string& title, int width, int height) {
     // Initialize and set up texture manager
     TextureManager::getInstance().initialize();
     TextureManager::getInstance().setRenderer(m_renderer);
+    
+    // Load missile texture
+    if (!TextureManager::getInstance().loadTexture("missile", "assets/sprites/MissileComplete1.png")) {
+        std::cerr << "Warning: Failed to load missile texture, will use fallback rendering" << std::endl;
+    }
 
     // Initialize aircraft manager
     m_aircraftManager.initialize(width, height);
@@ -237,11 +249,20 @@ void Game::handleEvents() {
                             m_rctrlPressed = true;
                             break;
                     }
+                } else if (m_gameState == GameState::PAUSED) {
+                    // Pause menu controls
+                    if (event.key.keysym.sym == SDLK_ESCAPE) {
+                        // Resume on ESC
+                        m_gameState = GameState::PLAYING;
+                        std::cout << "Resuming game..." << std::endl;
+                    }
                 } else if (m_gameState == GameState::PLAYING) {
                     // Bombing mode controls
                     switch (event.key.keysym.sym) {
                         case SDLK_ESCAPE:
-                            m_running = false;
+                            // Pause the game
+                            m_gameState = GameState::PAUSED;
+                            std::cout << "Game paused" << std::endl;
                             break;
                         case SDLK_SPACE:
                             m_aircraftManager.spawnBomber(-1.0f, -1.0f, static_cast<int>(m_selectedBombType));
@@ -326,11 +347,29 @@ void Game::handleEvents() {
                         int clickX = event.button.x;
                         int clickY = event.button.y;
                         
+                        // Check difficulty buttons
+                        int diffY = 275;  // boxY(200) + 30 + 45
+                        int diffBtnWidth = 100;
+                        int diffBtnHeight = 35;
+                        int diffBtnSpacing = 15;
+                        int diffStartX = m_windowWidth/2 - 115;
+                        
+                        for (int i = 0; i < 4; i++) {
+                            int btnX = diffStartX + i * (diffBtnWidth + diffBtnSpacing);
+                            SDL_Rect diffBtn = {btnX, diffY, diffBtnWidth, diffBtnHeight};
+                            if (isMouseOver(clickX, clickY, diffBtn)) {
+                                m_difficulty = static_cast<Difficulty>(i);
+                                m_audioManager.playSound(AudioManager::SoundEffect::MENU_CLICK);
+                                const char* diffNames[] = {"EASY", "NORMAL", "HARD"};
+                                std::cout << "Difficulty set to " << diffNames[i] << std::endl;
+                            }
+                        }
+                        
                         // Check map selection boxes
                         int boxWidth = 280;
                         int boxHeight = 220;
                         int spacing = 40;
-                        int y = 290;  // Match renderMenu position (boxY=200 + 30 + 60)
+                        int y = 335;  // Adjusted for difficulty buttons (was 290, +45 for diff buttons)
                         
                         // City Strike box
                         int cityX = m_windowWidth/2 - boxWidth - spacing/2;
@@ -376,16 +415,28 @@ void Game::handleEvents() {
                                     float runwayX = runway->getX();
                                     float runwayY = runway->getY();
                                     
-                                    // Place 6 AAA guns in a circle around the runway
-                                    const int numGuns = 6;
-                                    const float gunRadius = 300.0f;  // Distance from runway center
+                                    // Difficulty affects AAA gun count
+                                    int numGuns = 4;  // EASY
+                                    if (m_difficulty == Difficulty::NORMAL) numGuns = 6;
+                                    else if (m_difficulty == Difficulty::HARD) numGuns = 8;
+                                    
+                                    // Place AAA guns in a circle around the runway
+                                    // Keep them within visible screen bounds (with margins)
+                                    const float gunRadius = 250.0f;  // Distance from runway center
+                                    const float margin = 50.0f;  // Margin from screen edges
+                                    
                                     for (int i = 0; i < numGuns; i++) {
                                         float angle = (2.0f * M_PI * i) / numGuns;
                                         float gunX = runwayX + std::cos(angle) * gunRadius;
                                         float gunY = runwayY + std::sin(angle) * gunRadius;
+                                        
+                                        // Clamp to screen bounds with margin
+                                        gunX = std::max(margin, std::min(gunX, static_cast<float>(m_windowWidth) - margin));
+                                        gunY = std::max(margin, std::min(gunY, static_cast<float>(m_windowHeight) - margin));
+                                        
                                         m_aaaGuns.push_back(std::make_unique<AAAGun>(gunX, gunY));
                                     }
-                                    std::cout << "Generated " << numGuns << " AAA guns around runway" << std::endl;
+                                    std::cout << "Generated " << numGuns << " AAA guns around runway (within screen bounds)" << std::endl;
                                 }
                             }
                             
@@ -472,6 +523,83 @@ void Game::handleEvents() {
                             }
                         }
                         
+                    } else if (m_gameState == GameState::PAUSED) {
+                        // Handle pause menu button clicks
+                        int clickX = event.button.x;
+                        int clickY = event.button.y;
+                        
+                        int buttonWidth = 300;
+                        int buttonHeight = 60;
+                        int buttonX = m_windowWidth/2 - buttonWidth/2;
+                        int startY = m_windowHeight/2 - 100;
+                        int spacing = 20;
+                        
+                        // Resume button
+                        SDL_Rect resumeRect = {buttonX, startY, buttonWidth, buttonHeight};
+                        if (isMouseOver(clickX, clickY, resumeRect)) {
+                            m_gameState = GameState::PLAYING;
+                            std::cout << "Resuming game..." << std::endl;
+                        }
+                        
+                        // Restart button
+                        SDL_Rect restartRect = {buttonX, startY + buttonHeight + spacing, buttonWidth, buttonHeight};
+                        if (isMouseOver(clickX, clickY, restartRect)) {
+                            // Reset game counters
+                            m_aaaGunsDestroyedThisGame = 0;
+                            m_buildingsDestroyedThisGame = 0;
+                            m_bombersLostThisGame = 0;
+                            m_gameTime = 0.0f;
+                            initializeMissions();
+                            
+                            // Clear all entities
+                            m_aircraftManager.clearAll();
+                            m_weaponManager.clearAllBombs();
+                            m_weaponManager.clearAllBullets();
+                            m_explosionManager.clearAll();
+                            
+                            // Recreate map
+                            m_currentMap = std::make_unique<Map>(m_windowWidth, m_windowHeight);
+                            m_currentMap->loadMap(m_selectedMap);
+                            
+                            // Regenerate AAA guns
+                            Runway* runway = m_currentMap->getRunway();
+                            if (runway && m_selectedMap == "battleground") {
+                                m_aaaGuns.clear();
+                                float runwayX = runway->getX();
+                                float runwayY = runway->getY();
+                                
+                                // Difficulty affects AAA gun count
+                                int numGuns = 4;  // EASY
+                                if (m_difficulty == Difficulty::NORMAL) numGuns = 6;
+                                else if (m_difficulty == Difficulty::HARD) numGuns = 8;
+                                
+                                const float gunRadius = 250.0f;
+                                const float margin = 50.0f;
+                                
+                                for (int i = 0; i < numGuns; i++) {
+                                    float angle = (2.0f * M_PI * i) / numGuns;
+                                    float gunX = runwayX + std::cos(angle) * gunRadius;
+                                    float gunY = runwayY + std::sin(angle) * gunRadius;
+                                    
+                                    // Clamp to screen bounds with margin
+                                    gunX = std::max(margin, std::min(gunX, static_cast<float>(m_windowWidth) - margin));
+                                    gunY = std::max(margin, std::min(gunY, static_cast<float>(m_windowHeight) - margin));
+                                    
+                                    m_aaaGuns.push_back(std::make_unique<AAAGun>(gunX, gunY));
+                                }
+                            }
+                            
+                            m_gameState = GameState::PLAYING;
+                            std::cout << "Restarting mission..." << std::endl;
+                        }
+                        
+                        // Quit to Menu button
+                        SDL_Rect quitRect = {buttonX, startY + (buttonHeight + spacing) * 2, buttonWidth, buttonHeight};
+                        if (isMouseOver(clickX, clickY, quitRect)) {
+                            m_gameState = GameState::MENU;
+                            std::cout << "Returning to main menu..." << std::endl;
+                        }
+                        
                     } else if (m_gameState == GameState::PLAYING) {
                         // Bombing mode click handling
                         if (m_airstrikeMode) {
@@ -507,6 +635,11 @@ void Game::update(float deltaTime) {
         return;
     }
     
+    if (m_gameState == GameState::PAUSED) {
+        // No updates when paused, just render pause menu
+        return;
+    }
+    
     if (m_gameState == GameState::PVP) {
         updatePVP(deltaTime);
         return;
@@ -518,6 +651,11 @@ void Game::update(float deltaTime) {
     }
     
     // PLAYING mode update
+    m_gameTime += deltaTime;
+    
+    // Update missions
+    updateMissions();
+    
     // Update aircraft (pass weapon manager so bombers can drop bombs)
     m_aircraftManager.update(deltaTime, &m_weaponManager);
     
@@ -530,7 +668,7 @@ void Game::update(float deltaTime) {
         }
     }
     
-    // Update weapons (bombs and bullets)
+    // Update weapons (bombs, bullets)
     m_weaponManager.update(deltaTime);
     
     // Set runway Y position on all bullets
@@ -543,22 +681,40 @@ void Game::update(float deltaTime) {
         }
     }
     
+    // Track if any bomber was destroyed this frame to prevent multiple destructions
+    bool bomberDestroyedThisFrame = false;
+    
     // Check bullet collisions with bombers
     for (const auto& bullet : m_weaponManager.getBullets()) {
+        if (bomberDestroyedThisFrame) {
+            // Skip all remaining bullets if we already destroyed a bomber
+            break;
+        }
+        
         if (bullet && bullet->isActive()) {
             Bomber* hitBomber = m_aircraftManager.checkBomberCollision(bullet->getX(), bullet->getY());
-            if (hitBomber) {
+            // Ensure bomber is still active (could have been destroyed by another weapon this frame)
+            if (hitBomber && hitBomber->isActive()) {
                 hitBomber->takeDamage(1);  // Bullets do 1 damage
                 bullet->markHit();  // Destroy the bullet
                 
                 // Check if bomber is destroyed
                 if (hitBomber->getHealth() <= 0) {
+                    m_bombersLostThisGame++;
                     std::cout << "Bomber destroyed by fighter jet!" << std::endl;
+                    std::cout.flush();  // Force output to appear immediately
                     hitBomber->destroy();
+                    std::cout << "After destroy() call" << std::endl;
+                    std::cout.flush();
+                    bomberDestroyedThisFrame = true;  // Mark that we destroyed a bomber
+                    std::cout << "After setting flag - will break" << std::endl;
+                    std::cout.flush();
+                    // Don't continue - let loop naturally check flag at top
                 }
             }
             
-            // Check bullet collisions with fighters (AAA guns can shoot them down)
+            // Only check other collisions if we didn't just destroy a bomber
+            if (!bomberDestroyedThisFrame) {
             FighterJet* hitFighter = m_aircraftManager.checkFighterCollision(bullet->getX(), bullet->getY());
             if (hitFighter && bullet->canHit(hitFighter)) {  // Check if bullet can hit this fighter
                 float fighterX = hitFighter->getX();
@@ -599,6 +755,7 @@ void Game::update(float deltaTime) {
                     }
                 }
             }
+            } // End if (!bomberDestroyedThisFrame)
         }
     }
     
@@ -635,6 +792,7 @@ void Game::update(float deltaTime) {
             );
             
             if (destroyed > 0) {
+                m_buildingsDestroyedThisGame += destroyed;
                 std::cout << "Explosion destroyed " << destroyed << " building(s)" << std::endl;
             }
             
@@ -647,7 +805,11 @@ void Game::update(float deltaTime) {
                     float dist = std::sqrt(dx * dx + dy * dy);
                     
                     if (dist <= damageRadius) {
+                        int prevHealth = gun->getHealth();
                         gun->takeDamage(damage);
+                        if (prevHealth > 0 && gun->getHealth() <= 0) {
+                            m_aaaGunsDestroyedThisGame++;
+                        }
                     }
                 }
             }
@@ -703,6 +865,34 @@ void Game::render() {
     
     if (m_gameState == GameState::JET_FIGHTS) {
         renderJetFights();
+        SDL_RenderPresent(m_renderer);
+        return;
+    }
+    
+    if (m_gameState == GameState::PAUSED) {
+        // Render game in background (same as PLAYING)
+        SDL_SetRenderDrawColor(m_renderer, 135, 206, 235, 255);
+        SDL_RenderClear(m_renderer);
+        
+        if (m_currentMap) {
+            m_currentMap->render(m_renderer, m_font);
+        }
+        
+        m_explosionManager.render(m_renderer);
+        m_weaponManager.render(m_renderer);
+        
+        for (auto& gun : m_aaaGuns) {
+            if (gun && gun->isActive()) {
+                gun->render(m_renderer, m_font);
+            }
+        }
+        
+        m_aircraftManager.render(m_renderer);
+        renderHUD();
+        
+        // Render pause menu overlay
+        renderPauseMenu();
+        
         SDL_RenderPresent(m_renderer);
         return;
     }
@@ -907,6 +1097,9 @@ void Game::render() {
     // Render HUD in playing mode
     renderHUD();
     
+    // Render mission objectives
+    renderMissions();
+    
     // Present the rendered frame
     SDL_RenderPresent(m_renderer);
 }
@@ -992,7 +1185,57 @@ void Game::renderMenu() {
         SDL_DestroyTexture(sectionTexture);
         SDL_FreeSurface(sectionSurface);
     }
-    y += 60;
+    y += 45;
+    
+    // Difficulty selection
+    SDL_Surface* diffSurface = TTF_RenderText_Blended(m_font, "Difficulty:", lightGray);
+    if (diffSurface) {
+        SDL_Texture* diffTexture = SDL_CreateTextureFromSurface(m_renderer, diffSurface);
+        SDL_Rect diffRect = {m_windowWidth/2 - 250, y, diffSurface->w, diffSurface->h};
+        SDL_RenderCopy(m_renderer, diffTexture, nullptr, &diffRect);
+        SDL_DestroyTexture(diffTexture);
+        SDL_FreeSurface(diffSurface);
+    }
+    
+    // Difficulty buttons
+    int diffBtnWidth = 100;
+    int diffBtnHeight = 35;
+    int diffBtnSpacing = 15;
+    int diffStartX = m_windowWidth/2 - 115;
+    
+    const char* diffNames[] = {"EASY", "NORMAL", "HARD"};
+    for (int i = 0; i < 3; i++) {
+        int btnX = diffStartX + i * (diffBtnWidth + diffBtnSpacing);
+        SDL_Rect diffBtn = {btnX, y, diffBtnWidth, diffBtnHeight};
+        bool selected = (static_cast<int>(m_difficulty) == i);
+        bool hovered = isMouseOver(m_mouseX, m_mouseY, diffBtn);
+        
+        // Button background
+        if (selected) {
+            SDL_SetRenderDrawColor(m_renderer, 100, 180, 100, 255);
+        } else if (hovered) {
+            SDL_SetRenderDrawColor(m_renderer, 80, 100, 120, 255);
+        } else {
+            SDL_SetRenderDrawColor(m_renderer, 50, 60, 70, 255);
+        }
+        SDL_RenderFillRect(m_renderer, &diffBtn);
+        
+        // Border
+        SDL_SetRenderDrawColor(m_renderer, 100, 120, 140, 255);
+        SDL_RenderDrawRect(m_renderer, &diffBtn);
+        
+        // Text
+        SDL_Surface* btnSurface = TTF_RenderText_Blended(m_font, diffNames[i], white);
+        if (btnSurface) {
+            SDL_Texture* btnTexture = SDL_CreateTextureFromSurface(m_renderer, btnSurface);
+            SDL_Rect textRect = {btnX + diffBtnWidth/2 - btnSurface->w/2, y + diffBtnHeight/2 - btnSurface->h/2, btnSurface->w, btnSurface->h};
+            SDL_RenderCopy(m_renderer, btnTexture, nullptr, &textRect);
+            SDL_DestroyTexture(btnTexture);
+            SDL_FreeSurface(btnSurface);
+        }
+    }
+    
+    y += diffBtnHeight + 25;
     
     // Map selection boxes with visual representations
     int mapBoxWidth = 280;
@@ -2083,6 +2326,186 @@ void Game::renderHUD() {
 void Game::triggerScreenShake(float intensity, float duration) {
     m_screenShakeIntensity = intensity;
     m_screenShakeDuration = duration;
+}
+
+void Game::renderPauseMenu() {
+    // Semi-transparent overlay
+    SDL_SetRenderDrawBlendMode(m_renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(m_renderer, 0, 0, 0, 180);
+    SDL_Rect overlay = {0, 0, m_windowWidth, m_windowHeight};
+    SDL_RenderFillRect(m_renderer, &overlay);
+    
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color gray = {180, 180, 180, 255};
+    
+    // Title
+    std::string title = "PAUSED";
+    SDL_Surface* titleSurface = TTF_RenderText_Solid(m_font, title.c_str(), white);
+    if (titleSurface) {
+        SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(m_renderer, titleSurface);
+        SDL_Rect titleRect = {m_windowWidth/2 - 100, m_windowHeight/2 - 180, 200, 60};
+        SDL_RenderCopy(m_renderer, titleTexture, nullptr, &titleRect);
+        SDL_DestroyTexture(titleTexture);
+        SDL_FreeSurface(titleSurface);
+    }
+    
+    int buttonWidth = 300;
+    int buttonHeight = 60;
+    int buttonX = m_windowWidth/2 - buttonWidth/2;
+    int startY = m_windowHeight/2 - 100;
+    int spacing = 20;
+    
+    // Resume button
+    SDL_Color resumeColor = isMouseOver(m_mouseX, m_mouseY, {buttonX, startY, buttonWidth, buttonHeight}) ? 
+                           SDL_Color{100, 200, 100, 255} : SDL_Color{70, 140, 70, 255};
+    SDL_SetRenderDrawColor(m_renderer, resumeColor.r, resumeColor.g, resumeColor.b, resumeColor.a);
+    SDL_Rect resumeRect = {buttonX, startY, buttonWidth, buttonHeight};
+    SDL_RenderFillRect(m_renderer, &resumeRect);
+    
+    SDL_Surface* resumeSurface = TTF_RenderText_Solid(m_font, "RESUME", white);
+    if (resumeSurface) {
+        SDL_Texture* resumeTexture = SDL_CreateTextureFromSurface(m_renderer, resumeSurface);
+        SDL_Rect resumeTextRect = {buttonX + buttonWidth/2 - 60, startY + 18, 120, 24};
+        SDL_RenderCopy(m_renderer, resumeTexture, nullptr, &resumeTextRect);
+        SDL_DestroyTexture(resumeTexture);
+        SDL_FreeSurface(resumeSurface);
+    }
+    
+    // Restart button
+    int restartY = startY + buttonHeight + spacing;
+    SDL_Color restartColor = isMouseOver(m_mouseX, m_mouseY, {buttonX, restartY, buttonWidth, buttonHeight}) ?
+                            SDL_Color{200, 150, 50, 255} : SDL_Color{140, 100, 40, 255};
+    SDL_SetRenderDrawColor(m_renderer, restartColor.r, restartColor.g, restartColor.b, restartColor.a);
+    SDL_Rect restartRect = {buttonX, restartY, buttonWidth, buttonHeight};
+    SDL_RenderFillRect(m_renderer, &restartRect);
+    
+    SDL_Surface* restartSurface = TTF_RenderText_Solid(m_font, "RESTART MISSION", white);
+    if (restartSurface) {
+        SDL_Texture* restartTexture = SDL_CreateTextureFromSurface(m_renderer, restartSurface);
+        SDL_Rect restartTextRect = {buttonX + buttonWidth/2 - 100, restartY + 18, 200, 24};
+        SDL_RenderCopy(m_renderer, restartTexture, nullptr, &restartTextRect);
+        SDL_DestroyTexture(restartTexture);
+        SDL_FreeSurface(restartSurface);
+    }
+    
+    // Quit to Menu button
+    int quitY = restartY + buttonHeight + spacing;
+    SDL_Color quitColor = isMouseOver(m_mouseX, m_mouseY, {buttonX, quitY, buttonWidth, buttonHeight}) ?
+                         SDL_Color{200, 70, 70, 255} : SDL_Color{140, 50, 50, 255};
+    SDL_SetRenderDrawColor(m_renderer, quitColor.r, quitColor.g, quitColor.b, quitColor.a);
+    SDL_Rect quitRect = {buttonX, quitY, buttonWidth, buttonHeight};
+    SDL_RenderFillRect(m_renderer, &quitRect);
+    
+    SDL_Surface* quitSurface = TTF_RenderText_Solid(m_font, "QUIT TO MENU", white);
+    if (quitSurface) {
+        SDL_Texture* quitTexture = SDL_CreateTextureFromSurface(m_renderer, quitSurface);
+        SDL_Rect quitTextRect = {buttonX + buttonWidth/2 - 90, quitY + 18, 180, 24};
+        SDL_RenderCopy(m_renderer, quitTexture, nullptr, &quitTextRect);
+        SDL_DestroyTexture(quitTexture);
+        SDL_FreeSurface(quitSurface);
+    }
+    
+    // ESC hint
+    SDL_Surface* hintSurface = TTF_RenderText_Solid(m_font, "Press ESC to resume", gray);
+    if (hintSurface) {
+        SDL_Texture* hintTexture = SDL_CreateTextureFromSurface(m_renderer, hintSurface);
+        SDL_Rect hintRect = {m_windowWidth/2 - 110, quitY + buttonHeight + 30, 220, 20};
+        SDL_RenderCopy(m_renderer, hintTexture, nullptr, &hintRect);
+        SDL_DestroyTexture(hintTexture);
+        SDL_FreeSurface(hintSurface);
+    }
+}
+
+void Game::initializeMissions() {
+    m_missions.clear();
+    
+    // Create a single optional mission
+    Mission m1;
+    m1.name = "Building Destroyer";
+    m1.description = "Destroy 10 buildings";
+    m1.completed = false;
+    m1.failed = false;
+    m1.targetCount = 10;
+    m1.currentCount = 0;
+    m1.trackAAA = false;
+    m1.prohibitAAA = false;
+    m1.timeLimit = 0.0f;
+    m1.timeElapsed = 0.0f;
+    m_missions.push_back(m1);
+}
+
+void Game::updateMissions() {
+    // Update single mission progress based on game state
+    if (m_missions.empty()) return;
+    
+    auto& mission = m_missions[0];
+    if (mission.completed || mission.failed) return;
+    
+    // Building destruction mission
+    if (mission.name == "Building Destroyer") {
+        mission.currentCount = m_buildingsDestroyedThisGame;
+        if (mission.currentCount >= mission.targetCount) {
+            mission.completed = true;
+        }
+    }
+}
+
+void Game::renderMissions() {
+    // Render single mission objective in top-right corner
+    if (m_missions.empty()) return;
+    
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color green = {100, 255, 100, 255};
+    SDL_Color red = {255, 100, 100, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+    
+    int x = m_windowWidth - 320;
+    int y = 10;
+    int lineHeight = 22;
+    
+    // Title
+    SDL_Surface* titleSurface = TTF_RenderText_Solid(m_font, "Optional Mission:", white);
+    if (titleSurface) {
+        SDL_Texture* titleTexture = SDL_CreateTextureFromSurface(m_renderer, titleSurface);
+        SDL_Rect titleRect = {x, y, 250, 20};
+        SDL_RenderCopy(m_renderer, titleTexture, nullptr, &titleRect);
+        SDL_DestroyTexture(titleTexture);
+        SDL_FreeSurface(titleSurface);
+    }
+    y += lineHeight + 5;
+    
+    // Render the single mission
+    const auto& mission = m_missions[0];
+    std::string status;
+    SDL_Color color = white;
+    
+    if (mission.completed) {
+        status = " [COMPLETE]";
+        color = green;
+    } else if (mission.failed) {
+        status = " [FAILED]";
+        color = red;
+    } else {
+        // Show progress
+        if (mission.targetCount > 0) {
+            status = " (" + std::to_string(mission.currentCount) + "/" + 
+                    std::to_string(mission.targetCount) + ")";
+        } else if (mission.timeLimit > 0.0f) {
+            int remaining = static_cast<int>(mission.timeLimit - mission.timeElapsed);
+            status = " (" + std::to_string(remaining) + "s)";
+        }
+        color = gray;
+    }
+    
+    std::string text = mission.name + status;
+    SDL_Surface* surface = TTF_RenderText_Solid(m_font, text.c_str(), color);
+    if (surface) {
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(m_renderer, surface);
+        SDL_Rect rect = {x, y, 300, 18};
+        SDL_RenderCopy(m_renderer, texture, nullptr, &rect);
+        SDL_DestroyTexture(texture);
+        SDL_FreeSurface(surface);
+    }
 }
 
 void Game::shutdown() {

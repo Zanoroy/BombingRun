@@ -8,9 +8,11 @@
 
 namespace BombingRun {
 
+class Bomber;
+
 /**
  * WeaponManager
- * Manages all active bombs and weapon systems
+ * Manages all active bombs and bullets
  */
 class WeaponManager {
 public:
