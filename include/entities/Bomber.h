@@ -42,6 +42,11 @@ public:
      * @param damage Damage amount (usually 1)
      */
     void takeDamage(int damage);
+    
+    /**
+     * @brief Set if this is a nuke bomber (15 HP, 80% hit rate, larger size)
+     */
+    void setNukeBomber(bool isNuke);
 
     /**
      * @brief Check if bomber reached target
@@ -94,6 +99,7 @@ private:
     bool m_reachedTarget;       // Has reached target?
     bool m_bombsDropped;        // Has dropped bombs at target?
     bool m_exited;              // Has exited screen?
+    bool m_isNukeBomber;        // Is this a nuke bomber? (15 HP, 80% hit rate)
     float m_smokeTimer;         // Timer for smoke effects
 
     // Visual properties

@@ -301,6 +301,16 @@ void Game::handleEvents() {
                                 std::cout << "9 pressed - Player troops deployed at (" << m_mouseX << ", " << m_mouseY << ")" << std::endl;
                             }
                             break;
+                        case SDLK_0:
+                            // Deploy NUKE bomber (special superfortress)
+                            {
+                                auto bomber = m_aircraftManager.spawnBomber(-1.0f, -1.0f, 8);  // BombType::NUKE = 8
+                                if (bomber) {
+                                    bomber->setNukeBomber(true);  // 15 HP, 80% hit rate, larger size
+                                    std::cout << "0 pressed - NUKE bomber deployed! (15 HP, 80% hit rate, 5x explosion)" << std::endl;
+                                }
+                            }
+                            break;
                     }
                 }
                 break;

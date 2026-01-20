@@ -14,7 +14,8 @@ enum class BombType {
     BOMB_2000LB = 4,
     BOMB_4000LB = 5,
     BOMB_8000LB = 6,
-    AIRSTRIKE = 7
+    AIRSTRIKE = 7,
+    NUKE = 8
 };
 
 // Bomb configuration structure
@@ -70,7 +71,7 @@ protected:
     float m_groundLevel;        // Y coordinate of ground
     
     // Static configuration table (includes airstrike at index 7)
-    static const BombConfig BOMB_CONFIGS[8];
+    static const BombConfig BOMB_CONFIGS[9];
 };
 
 } // namespace BombingRun

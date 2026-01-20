@@ -49,9 +49,10 @@ public:
      * @brief Spawn a bomber with specific bomb type
      * @param targetX Target X position (if negative, random)
      * @param targetY Target Y position (if negative, random ground position)
-     * @param bombType Bomb type determines speed (0-6 for 100lb-8000lb)
+     * @param bombType Bomb type determines speed (0-6 for 100lb-8000lb, 8 for NUKE)
+     * @return Pointer to spawned bomber
      */
-    void spawnBomber(float targetX = -1.0f, float targetY = -1.0f, int bombType = 0);
+    Bomber* spawnBomber(float targetX = -1.0f, float targetY = -1.0f, int bombType = 0);
 
     /**
      * @brief Deploy airstrike - spawns 5 bombers in formation with small bombs
@@ -165,7 +166,8 @@ private:
     float m_autoSpawnTimer;  // Timer for automatic fighter spawning
     
     // Bomb type speeds from specification (includes airstrike at index 7)
-    static constexpr float BOMB_SPEEDS[8] = {6.0f, 5.5f, 5.0f, 4.0f, 3.0f, 2.5f, 2.0f, 5.0f};
+    // Bomb speeds: 100lb, 250lb, 500lb, 1000lb, 2000lb, 4000lb, 8000lb, Airstrike, NUKE
+    static constexpr float BOMB_SPEEDS[9] = {6.0f, 5.5f, 5.0f, 4.0f, 3.0f, 2.5f, 2.0f, 5.0f, 1.0f};
 };
 
 } // namespace BombingRun

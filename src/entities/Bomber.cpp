@@ -19,6 +19,7 @@ Bomber::Bomber(float spawnX, float spawnY, float targetX, float targetY, float s
     , m_reachedTarget(false)
     , m_bombsDropped(false)
     , m_exited(false)
+    , m_isNukeBomber(false)
     , m_smokeTimer(0.0f)
 {
     m_width = BOMBER_WIDTH;
@@ -85,8 +86,9 @@ void Bomber::render(SDL_Renderer* renderer, TTF_Font* font) {
         return;
     }
 
-    // Try to use sprite if available
-    SDL_Texture* texture = TextureManager::getInstance().getTexture("planes");
+    // Select texture based on bomber type
+    const char* textureName = m_isNukeBomber ? "nukebomber" : "planes";
+    SDL_Texture* texture = TextureManager::getInstance().getTexture(textureName);
     
     if (texture) {
         // Single sprite (175x175)
@@ -98,11 +100,15 @@ void Bomber::render(SDL_Renderer* renderer, TTF_Font* font) {
         };
         
         // Destination rectangle (centered on bomber position)
+        // Use actual width/height for nuke bomber (1.5x larger)
+        int renderWidth = m_isNukeBomber ? static_cast<int>(RENDER_SIZE * 1.5f) : RENDER_SIZE;
+        int renderHeight = m_isNukeBomber ? static_cast<int>(RENDER_SIZE * 1.5f) : RENDER_SIZE;
+        
         SDL_Rect destRect = {
-            static_cast<int>(m_x - RENDER_SIZE / 2),
-            static_cast<int>(m_y - RENDER_SIZE / 2),
-            RENDER_SIZE,
-            RENDER_SIZE
+            static_cast<int>(m_x - renderWidth / 2),
+            static_cast<int>(m_y - renderHeight / 2),
+            renderWidth,
+            renderHeight
         };
         
         // Apply damage tint if damaged
@@ -114,7 +120,7 @@ void Bomber::render(SDL_Renderer* renderer, TTF_Font* font) {
         }
         
         // Render with rotation
-        TextureManager::getInstance().drawFrame("planes", srcRect, destRect, m_angle);
+        TextureManager::getInstance().drawFrame(textureName, srcRect, destRect, m_angle);
         
         // Reset color mod
         SDL_SetTextureColorMod(texture, 255, 255, 255);
@@ -159,6 +165,15 @@ void Bomber::render(SDL_Renderer* renderer, TTF_Font* font) {
 }
 
 void Bomber::takeDamage(int damage) {
+    // Nuke bombers have 80% hit rate (1 in 5 shots miss due to high altitude)
+    if (m_isNukeBomber) {
+        // 20% chance to evade damage
+        if (rand() % 5 == 0) {
+            std::cout << "Nuke bomber evaded hit (high altitude)!" << std::endl;
+            return;
+        }
+    }
+    
     m_health -= damage;
     
     if (m_health <= 0) {
@@ -182,7 +197,20 @@ SDL_Color Bomber::getDamageColor() const {
 }
 
 bool Bomber::loadSprites() {
-    return TextureManager::getInstance().loadTexture("planes", "assets/sprites/bomberandfighter.png");
+    bool success = TextureManager::getInstance().loadTexture("planes", "assets/sprites/bomberandfighter.png");
+    success &= TextureManager::getInstance().loadTexture("nukebomber", "assets/sprites/NukeBomberComplete.png");
+    return success;
+}
+
+void Bomber::setNukeBomber(bool isNuke) {
+    m_isNukeBomber = isNuke;
+    if (isNuke) {
+        m_maxHealth = 15;
+        m_health = 15;
+        // Make nuke bomber larger (1.5x size)
+        m_width = BOMBER_WIDTH * 1.5f;
+        m_height = BOMBER_HEIGHT * 1.5f;
+    }
 }
 
 } // namespace BombingRun

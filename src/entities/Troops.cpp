@@ -48,20 +48,12 @@ void Troops::formationSetup() {
 void Troops::update(float deltaTime) {
     if (!isActive()) return;
     
-    // Update soldier cooldowns and reloads FIRST (always)
+    // Update soldier cooldowns FIRST (always)
     for (auto& soldier : m_soldiers) {
         if (!soldier.isAlive) continue;
         
         if (soldier.shootCooldown > 0.0f) {
             soldier.shootCooldown -= deltaTime;
-        }
-        if (soldier.isReloading) {
-            soldier.reloadTime -= deltaTime;
-            if (soldier.reloadTime <= 0.0f) {
-                soldier.isReloading = false;
-                soldier.ammoCount = 3;  // Full reload to 3 bullets
-                soldier.shootCooldown = 0.0f;  // Ready to shoot immediately
-            }
         }
     }
     
@@ -144,18 +136,8 @@ void Troops::updateSoldierShooting(float deltaTime) {
     for (auto& soldier : m_soldiers) {
         if (!soldier.isAlive) continue;
         
-        // Skip if reloading
-        if (soldier.isReloading) continue;
-        
         // Skip if on cooldown
         if (soldier.shootCooldown > 0.0f) continue;
-        
-        // Check ammo - reload if empty
-        if (soldier.ammoCount <= 0) {
-            soldier.isReloading = true;
-            soldier.reloadTime = RELOAD_TIME;
-            continue;
-        }
         
         // Calculate soldier world position
         float soldierX = m_x + soldier.offsetX;
@@ -193,11 +175,9 @@ void Troops::updateSoldierShooting(float deltaTime) {
             bullet->setColor(0, 0, 0);
             m_bulletsFired.push_back(bullet);
             
-            // Consume ammo
-            soldier.ammoCount--;
-            
-            // Set 0.5 second cooldown before next shot
-            soldier.shootCooldown = 0.5f;
+            // Set random cooldown between shots (0.2-0.6 seconds)
+            std::uniform_real_distribution<float> cooldownVar(0.2f, 0.6f);
+            soldier.shootCooldown = cooldownVar(gen);
         }
     }
 }

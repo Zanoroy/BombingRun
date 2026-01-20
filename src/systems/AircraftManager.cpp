@@ -37,10 +37,11 @@ bool AircraftManager::loadSprites() {
     return bomberSprites && fighterSprites;
 }
 
-void AircraftManager::spawnBomber(float targetX, float targetY, int bombType) {
-    // Clamp bomb type to valid range
+Bomber* AircraftManager::spawnBomber(float targetX, float targetY, int bombType) {
+    // Clamp bomb type to valid range (0-6 for standard bombs, 8 for NUKE)
     if (bombType < 0) bombType = 0;
-    if (bombType > 6) bombType = 6;
+    if (bombType > 8) bombType = 8;
+    if (bombType == 7) bombType = 7;  // Airstrike allowed
 
     // Spawn at bottom of screen, directly below target X position
     float spawnX = targetX;
@@ -63,6 +64,7 @@ void AircraftManager::spawnBomber(float targetX, float targetY, int bombType) {
 
     // Create and add bomber
     auto bomber = std::make_unique<Bomber>(spawnX, spawnY, targetX, targetY, speed, bombType, spriteIndex);
+    Bomber* bomberPtr = bomber.get();  // Get pointer before moving
     m_bombers.push_back(std::move(bomber));
 
     std::cout << "Spawned bomber at (" << spawnX << ", " << spawnY 
@@ -70,6 +72,8 @@ void AircraftManager::spawnBomber(float targetX, float targetY, int bombType) {
               << ") with speed " << speed 
               << " bombType " << bombType
               << " sprite " << spriteIndex << std::endl;
+    
+    return bomberPtr;
 }
 
 void AircraftManager::deployAirstrike(float targetX, float targetY) {
