@@ -27,7 +27,12 @@ enum class StructureType {
     BRIDGE_VERTICAL,
     POWERLINE_HORIZONTAL,
     POWERLINE_VERTICAL,
-    POWERLINE_TOWER
+    POWERLINE_TOWER,
+    TREE_SMALL,
+    TREE_MEDIUM,
+    TREE_LARGE,
+    BUSH,
+    GRASS_PATCH
 };
 
 /**
@@ -123,13 +128,30 @@ private:
     void addHospital(int x, int y);
     void addIndustrial(int x, int y, int width, int height);
     void addPowerline(int x1, int y1, int x2, int y2);
+    void addTree(int x, int y, int size);
+    void addBush(int x, int y);
+    void generateVegetation(int density);
 
+public:
+    void setWasteland(bool wasteland) { m_isWasteland = wasteland; }
+    bool isWasteland() const { return m_isWasteland; }
+    void setShockwavePosition(float x, float y, float radius) {
+        m_shockwaveX = x;
+        m_shockwaveY = y;
+        m_shockwaveRadius = radius;
+    }
+
+private:
     int m_width;
     int m_height;
     int m_destroyedBuildings;
     std::vector<std::unique_ptr<MapObject>> m_objects;
     SDL_Color m_grassColor;
     BuildingManager m_buildingManager;
+    bool m_isWasteland;
+    float m_shockwaveX;
+    float m_shockwaveY;
+    float m_shockwaveRadius;
 };
 
 } // namespace BombingRun

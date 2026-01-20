@@ -93,33 +93,141 @@ void Crater::update(float deltaTime) {
 }
 
 void Crater::render(SDL_Renderer* renderer) {
-    // Draw crater as a dark circle
-    SDL_SetRenderDrawColor(renderer, 60, 50, 40, 255);  // Dark brown
+    // Check if this is a MASSIVE NUKE crater
+    bool isNukeCrater = (m_radius > 300);
     
-    // Fill circle approximation
-    for (int dy = -m_radius; dy <= m_radius; dy++) {
-        for (int dx = -m_radius; dx <= m_radius; dx++) {
-            if (dx * dx + dy * dy <= m_radius * m_radius) {
-                SDL_RenderDrawPoint(renderer,
-                    static_cast<int>(m_x + dx),
-                    static_cast<int>(m_y + dy));
+    if (isNukeCrater) {
+        // NUCLEAR CRATER - Multiple dramatic layers
+        
+        // Layer 1: Outer scorched wasteland (pitch black)
+        SDL_SetRenderDrawColor(renderer, 15, 10, 5, 255);
+        for (int dy = -m_radius; dy <= m_radius; dy++) {
+            for (int dx = -m_radius; dx <= m_radius; dx++) {
+                float distSq = dx * dx + dy * dy;
+                if (distSq <= m_radius * m_radius) {
+                    SDL_RenderDrawPoint(renderer,
+                        static_cast<int>(m_x + dx),
+                        static_cast<int>(m_y + dy));
+                }
             }
         }
-    }
-    
-    // Draw crater rim (lighter edge)
-    SDL_SetRenderDrawColor(renderer, 100, 90, 70, 255);
-    int segments = 32;
-    for (int i = 0; i < segments; i++) {
-        float angle1 = (i * 2.0f * M_PI) / segments;
-        float angle2 = ((i + 1) * 2.0f * M_PI) / segments;
         
-        int x1 = static_cast<int>(m_x + m_radius * cos(angle1));
-        int y1 = static_cast<int>(m_y + m_radius * sin(angle1));
-        int x2 = static_cast<int>(m_x + m_radius * cos(angle2));
-        int y2 = static_cast<int>(m_y + m_radius * sin(angle2));
+        // Layer 2: Burned zone (dark charcoal)
+        int layer2Radius = m_radius * 0.85f;
+        SDL_SetRenderDrawColor(renderer, 30, 20, 10, 255);
+        for (int dy = -layer2Radius; dy <= layer2Radius; dy++) {
+            for (int dx = -layer2Radius; dx <= layer2Radius; dx++) {
+                float distSq = dx * dx + dy * dy;
+                if (distSq <= layer2Radius * layer2Radius) {
+                    SDL_RenderDrawPoint(renderer,
+                        static_cast<int>(m_x + dx),
+                        static_cast<int>(m_y + dy));
+                }
+            }
+        }
         
-        SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+        // Layer 3: Deep impact zone (very dark brown)
+        int layer3Radius = m_radius * 0.7f;
+        SDL_SetRenderDrawColor(renderer, 50, 30, 15, 255);
+        for (int dy = -layer3Radius; dy <= layer3Radius; dy++) {
+            for (int dx = -layer3Radius; dx <= layer3Radius; dx++) {
+                float distSq = dx * dx + dy * dy;
+                if (distSq <= layer3Radius * layer3Radius) {
+                    SDL_RenderDrawPoint(renderer,
+                        static_cast<int>(m_x + dx),
+                        static_cast<int>(m_y + dy));
+                }
+            }
+        }
+        
+        // Layer 4: Molten core area (dark red/orange)
+        int layer4Radius = m_radius * 0.5f;
+        SDL_SetRenderDrawColor(renderer, 80, 25, 0, 255);
+        for (int dy = -layer4Radius; dy <= layer4Radius; dy++) {
+            for (int dx = -layer4Radius; dx <= layer4Radius; dx++) {
+                float distSq = dx * dx + dy * dy;
+                if (distSq <= layer4Radius * layer4Radius) {
+                    SDL_RenderDrawPoint(renderer,
+                        static_cast<int>(m_x + dx),
+                        static_cast<int>(m_y + dy));
+                }
+            }
+        }
+        
+        // Layer 5: Inner molten zone (glowing)
+        int layer5Radius = m_radius * 0.3f;
+        SDL_SetRenderDrawColor(renderer, 120, 40, 0, 255);
+        for (int dy = -layer5Radius; dy <= layer5Radius; dy++) {
+            for (int dx = -layer5Radius; dx <= layer5Radius; dx++) {
+                float distSq = dx * dx + dy * dy;
+                if (distSq <= layer5Radius * layer5Radius) {
+                    SDL_RenderDrawPoint(renderer,
+                        static_cast<int>(m_x + dx),
+                        static_cast<int>(m_y + dy));
+                }
+            }
+        }
+        
+        // Layer 6: Hot center (bright glow)
+        int layer6Radius = m_radius * 0.15f;
+        SDL_SetRenderDrawColor(renderer, 160, 60, 10, 255);
+        for (int dy = -layer6Radius; dy <= layer6Radius; dy++) {
+            for (int dx = -layer6Radius; dx <= layer6Radius; dx++) {
+                float distSq = dx * dx + dy * dy;
+                if (distSq <= layer6Radius * layer6Radius) {
+                    SDL_RenderDrawPoint(renderer,
+                        static_cast<int>(m_x + dx),
+                        static_cast<int>(m_y + dy));
+                }
+            }
+        }
+        
+        // Draw thick glowing rim around entire crater
+        SDL_SetRenderDrawColor(renderer, 180, 120, 60, 255);
+        int segments = 64;
+        for (int thickness = 0; thickness < 5; thickness++) {
+            for (int i = 0; i < segments; i++) {
+                float angle1 = (i * 2.0f * M_PI) / segments;
+                float angle2 = ((i + 1) * 2.0f * M_PI) / segments;
+                
+                int x1 = static_cast<int>(m_x + (m_radius - thickness) * cos(angle1));
+                int y1 = static_cast<int>(m_y + (m_radius - thickness) * sin(angle1));
+                int x2 = static_cast<int>(m_x + (m_radius - thickness) * cos(angle2));
+                int y2 = static_cast<int>(m_y + (m_radius - thickness) * sin(angle2));
+                
+                SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+            }
+        }
+        
+    } else {
+        // Normal crater
+        SDL_SetRenderDrawColor(renderer, 60, 50, 40, 255);  // Dark brown
+        
+        // Fill circle approximation
+        for (int dy = -m_radius; dy <= m_radius; dy++) {
+            for (int dx = -m_radius; dx <= m_radius; dx++) {
+                if (dx * dx + dy * dy <= m_radius * m_radius) {
+                    SDL_RenderDrawPoint(renderer,
+                        static_cast<int>(m_x + dx),
+                        static_cast<int>(m_y + dy));
+                }
+            }
+        }
+        
+        // Draw crater rim (lighter edge)
+        SDL_SetRenderDrawColor(renderer, 100, 90, 70, 255);
+        int segments = 32;
+        for (int i = 0; i < segments; i++) {
+            float angle1 = (i * 2.0f * M_PI) / segments;
+            float angle2 = ((i + 1) * 2.0f * M_PI) / segments;
+            
+            int x1 = static_cast<int>(m_x + m_radius * cos(angle1));
+            int y1 = static_cast<int>(m_y + m_radius * sin(angle1));
+            int x2 = static_cast<int>(m_x + m_radius * cos(angle2));
+            int y2 = static_cast<int>(m_y + m_radius * sin(angle2));
+            
+            SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+        }
     }
 }
 

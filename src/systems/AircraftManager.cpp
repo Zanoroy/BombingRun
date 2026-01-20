@@ -289,6 +289,25 @@ void AircraftManager::clearAll() {
     std::cout << "Cleared all aircraft" << std::endl;
 }
 
+void AircraftManager::destroyAllAircraft() {
+    // Destroy all bombers
+    for (auto& bomber : m_bombers) {
+        if (bomber->isActive()) {
+            bomber->destroy();
+        }
+    }
+    
+    // Destroy all fighter jets
+    for (auto& fighter : m_fighters) {
+        if (fighter->isActive()) {
+            fighter->destroy();
+        }
+    }
+    
+    std::cout << "Nuclear blast destroyed " << m_bombers.size() << " bombers and " 
+              << m_fighters.size() << " fighters" << std::endl;
+}
+
 void AircraftManager::spawnFighterJet() {
     if (!m_runwaySet) {
         std::cerr << "Cannot spawn fighter - runway position not set!" << std::endl;

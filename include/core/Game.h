@@ -266,6 +266,18 @@ private:
     float m_screenShakeDuration;   // Remaining shake duration
     float m_screenShakeX;          // Current shake offset X
     float m_screenShakeY;          // Current shake offset Y
+    
+    // Time dilation (slow motion) effects
+    float m_timeDilation;          // Time scale multiplier (1.0 = normal, 0.2 = slow-mo)
+    float m_timeDilationDuration;  // Remaining slow-mo duration
+    
+    // Nuke shockwave tracking
+    bool m_nukeShockwaveActive;    // Is nuke shockwave expanding
+    float m_nukeShockwaveX;        // Nuke explosion center X
+    float m_nukeShockwaveY;        // Nuke explosion center Y
+    float m_nukeShockwaveRadius;   // Current shockwave radius
+    float m_nukeShockwaveMaxRadius; // Maximum shockwave radius
+    float m_nukeShockwaveSpeed;    // Expansion speed
 
     // Target frame time for 60 FPS (16.67ms)
     static constexpr Uint32 TARGET_FRAME_TIME = 16;

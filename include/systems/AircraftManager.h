@@ -134,6 +134,11 @@ public:
      * @brief Clear all aircraft
      */
     void clearAll();
+    
+    /**
+     * @brief Destroy all aircraft (used for nuke blast)
+     */
+    void destroyAllAircraft();
 
 private:
     float getSpeedForBombType(int bombType) const;

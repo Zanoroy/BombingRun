@@ -10,6 +10,10 @@ Map::Map(int width, int height)
     , m_height(height)
     , m_destroyedBuildings(0)
     , m_grassColor{34, 139, 34, 255}  // Forest green
+    , m_isWasteland(false)
+    , m_shockwaveX(0.0f)
+    , m_shockwaveY(0.0f)
+    , m_shockwaveRadius(0.0f)
 {
 }
 
@@ -24,6 +28,9 @@ bool Map::loadMap(const std::string& mapName) {
         // Generate civilian buildings for City map
         m_buildingManager.generateCityBuildings(m_width, m_height, 50);
         std::cout << "Generated " << m_buildingManager.getActiveCount() << " buildings" << std::endl;
+        
+        // Add vegetation around the city
+        generateVegetation(80);  // 80 trees/bushes for city
         return true;
     } else if (mapName == "battleground") {
         // BattleGround map with military base
@@ -34,6 +41,9 @@ bool Map::loadMap(const std::string& mapName) {
         if (runway) {
             std::cout << "Runway health: " << runway->getHealth() << " / " << runway->getMaxHealth() << std::endl;
         }
+        
+        // Add sparse vegetation around military base
+        generateVegetation(50);  // Fewer trees on battleground
         return true;
     }
     
@@ -46,6 +56,32 @@ void Map::render(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, m_grassColor.r, m_grassColor.g, m_grassColor.b, 255);
     SDL_Rect grassRect = {0, 0, m_width, m_height};
     SDL_RenderFillRect(renderer, &grassRect);
+    
+    // Draw expanding wasteland circle if shockwave is active
+    if (m_shockwaveRadius > 0.0f && !m_isWasteland) {
+        SDL_SetRenderDrawColor(renderer, 150, 130, 100, 255);  // Pale brown wasteland
+        int intRadius = static_cast<int>(m_shockwaveRadius);
+        int centerX = static_cast<int>(m_shockwaveX);
+        int centerY = static_cast<int>(m_shockwaveY);
+        
+        // Draw filled circle for wasteland spread
+        for (int dy = -intRadius; dy <= intRadius; dy++) {
+            for (int dx = -intRadius; dx <= intRadius; dx++) {
+                if (dx * dx + dy * dy <= intRadius * intRadius) {
+                    int drawX = centerX + dx;
+                    int drawY = centerY + dy;
+                    if (drawX >= 0 && drawX < m_width && drawY >= 0 && drawY < m_height) {
+                        SDL_RenderDrawPoint(renderer, drawX, drawY);
+                    }
+                }
+            }
+        }
+    }
+    // Draw full wasteland if transformation complete
+    else if (m_isWasteland) {
+        SDL_SetRenderDrawColor(renderer, 150, 130, 100, 255);
+        SDL_RenderFillRect(renderer, &grassRect);
+    }
     
     // Render buildings first (beneath roads)
     m_buildingManager.render(renderer, font);
@@ -79,8 +115,91 @@ void Map::render(SDL_Renderer* renderer, TTF_Font* font) {
             }
         }
         
-        SDL_SetRenderDrawColor(renderer, renderColor.r, renderColor.g, renderColor.b, renderColor.a);
-        SDL_RenderFillRect(renderer, &obj->bounds);
+        // Special rendering for trees (circular shape)
+        if (obj->type == StructureType::TREE_SMALL ||
+            obj->type == StructureType::TREE_MEDIUM ||
+            obj->type == StructureType::TREE_LARGE) {
+            int centerX = obj->bounds.x + obj->bounds.w / 2;
+            int centerY = obj->bounds.y + obj->bounds.h / 2;
+            int radius = obj->bounds.w / 2;
+            
+            // Check if this tree is within shockwave radius
+            bool hitByShockwave = false;
+            if (m_shockwaveRadius > 0.0f) {
+                float dx = centerX - m_shockwaveX;
+                float dy = centerY - m_shockwaveY;
+                float dist = std::sqrt(dx * dx + dy * dy);
+                hitByShockwave = (dist <= m_shockwaveRadius);
+            }
+            
+            // Draw tree crown (circle) - dead if hit by shockwave or wasteland mode
+            if (m_isWasteland || hitByShockwave) {
+                SDL_SetRenderDrawColor(renderer, 80, 70, 60, 255);  // Dead gray-brown
+            } else {
+                SDL_SetRenderDrawColor(renderer, renderColor.r, renderColor.g, renderColor.b, renderColor.a);
+            }
+            
+            // Draw filled circle for tree crown
+            for (int dy = -radius; dy <= radius; dy++) {
+                for (int dx = -radius; dx <= radius; dx++) {
+                    if (dx * dx + dy * dy <= radius * radius) {
+                        SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
+                    }
+                }
+            }
+            
+            // Draw trunk (darker brown for dead trees in wasteland)
+            if (m_isWasteland || hitByShockwave) {
+                SDL_SetRenderDrawColor(renderer, 60, 50, 40, 255);  // Dead trunk
+            } else {
+                SDL_SetRenderDrawColor(renderer, 101, 67, 33, 255);  // Brown
+            }
+            int trunkWidth = radius / 3;
+            int trunkHeight = radius;
+            SDL_Rect trunk = {
+                centerX - trunkWidth / 2,
+                centerY + radius / 2,
+                trunkWidth,
+                trunkHeight
+            };
+            SDL_RenderFillRect(renderer, &trunk);
+        }
+        // Special rendering for bushes (small rounded shapes)
+        else if (obj->type == StructureType::BUSH) {
+            int centerX = obj->bounds.x + obj->bounds.w / 2;
+            int centerY = obj->bounds.y + obj->bounds.h / 2;
+            int radius = obj->bounds.w / 2;
+            
+            // Check if this bush is within shockwave radius
+            bool hitByShockwave = false;
+            if (m_shockwaveRadius > 0.0f) {
+                float dx = centerX - m_shockwaveX;
+                float dy = centerY - m_shockwaveY;
+                float dist = std::sqrt(dx * dx + dy * dy);
+                hitByShockwave = (dist <= m_shockwaveRadius);
+            }
+            
+            // Dead if hit by shockwave or wasteland mode
+            if (m_isWasteland || hitByShockwave) {
+                SDL_SetRenderDrawColor(renderer, 90, 80, 70, 255);  // Dead bush
+            } else {
+                SDL_SetRenderDrawColor(renderer, renderColor.r, renderColor.g, renderColor.b, renderColor.a);
+            }
+            
+            // Draw filled circle for bush
+            for (int dy = -radius; dy <= radius; dy++) {
+                for (int dx = -radius; dx <= radius; dx++) {
+                    if (dx * dx + dy * dy <= radius * radius) {
+                        SDL_RenderDrawPoint(renderer, centerX + dx, centerY + dy);
+                    }
+                }
+            }
+        }
+        // Normal rendering for other objects (roads, buildings, etc.)
+        else {
+            SDL_SetRenderDrawColor(renderer, renderColor.r, renderColor.g, renderColor.b, renderColor.a);
+            SDL_RenderFillRect(renderer, &obj->bounds);
+        }
         
         // Draw border for buildings
         if (obj->type == StructureType::HOUSE_SMALL ||
@@ -380,6 +499,91 @@ void Map::addPowerline(int x1, int y1, int x2, int y2) {
         SDL_Color{40, 40, 40, 255},  // Dark gray
         false, 0
     ));
+}
+
+void Map::addTree(int x, int y, int size) {
+    StructureType treeType;
+    SDL_Color treeColor;
+    
+    // Vary tree colors for realism
+    int colorVariation = rand() % 30 - 15;  // -15 to +15
+    
+    if (size == 0) {  // Small tree
+        treeType = StructureType::TREE_SMALL;
+        treeColor = {34 + colorVariation, 139 + colorVariation, 34 + colorVariation, 255};  // Forest green
+    } else if (size == 1) {  // Medium tree
+        treeType = StructureType::TREE_MEDIUM;
+        treeColor = {50 + colorVariation, 120 + colorVariation, 50 + colorVariation, 255};  // Medium green
+    } else {  // Large tree
+        treeType = StructureType::TREE_LARGE;
+        treeColor = {20 + colorVariation, 100 + colorVariation, 20 + colorVariation, 255};  // Dark green
+    }
+    
+    int treeSize = (size == 0) ? 15 : (size == 1) ? 25 : 35;
+    
+    m_objects.push_back(std::make_unique<MapObject>(
+        treeType,
+        x, y, treeSize, treeSize,
+        treeColor,
+        false, 0  // Trees are not destructible (could make them destructible later)
+    ));
+}
+
+void Map::addBush(int x, int y) {
+    // Random bush color variation
+    int colorVariation = rand() % 20 - 10;
+    SDL_Color bushColor = {60 + colorVariation, 130 + colorVariation, 60 + colorVariation, 255};
+    
+    m_objects.push_back(std::make_unique<MapObject>(
+        StructureType::BUSH,
+        x, y, 10, 10,
+        bushColor,
+        false, 0
+    ));
+}
+
+void Map::generateVegetation(int density) {
+    // Generate random trees and bushes across the map
+    srand(static_cast<unsigned>(time(nullptr)));
+    
+    for (int i = 0; i < density; i++) {
+        int x = rand() % (m_width - 50) + 25;
+        int y = rand() % (m_height - 50) + 25;
+        
+        // Check if position is far enough from buildings
+        bool tooCloseToBuilding = false;
+        for (const auto& obj : m_objects) {
+            if (obj->type == StructureType::HOUSE_SMALL ||
+                obj->type == StructureType::HOUSE_MEDIUM ||
+                obj->type == StructureType::HOUSE_LARGE ||
+                obj->type == StructureType::HOSPITAL ||
+                obj->type == StructureType::INDUSTRIAL) {
+                
+                float dx = (obj->bounds.x + obj->bounds.w / 2) - x;
+                float dy = (obj->bounds.y + obj->bounds.h / 2) - y;
+                float dist = std::sqrt(dx * dx + dy * dy);
+                
+                if (dist < 60.0f) {  // Keep 60px clearance from buildings
+                    tooCloseToBuilding = true;
+                    break;
+                }
+            }
+        }
+        
+        if (tooCloseToBuilding) {
+            continue;
+        }
+        
+        // 70% trees, 30% bushes
+        if (rand() % 100 < 70) {
+            int treeSize = rand() % 3;  // 0=small, 1=medium, 2=large
+            addTree(x, y, treeSize);
+        } else {
+            addBush(x, y);
+        }
+    }
+    
+    std::cout << "Generated " << density << " vegetation objects" << std::endl;
 }
 
 } // namespace BombingRun

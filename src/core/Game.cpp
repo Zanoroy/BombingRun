@@ -29,6 +29,14 @@ Game::Game()
     , m_screenShakeDuration(0.0f)
     , m_screenShakeX(0.0f)
     , m_screenShakeY(0.0f)
+    , m_timeDilation(1.0f)  // Normal time speed
+    , m_timeDilationDuration(0.0f)
+    , m_nukeShockwaveActive(false)
+    , m_nukeShockwaveX(0.0f)
+    , m_nukeShockwaveY(0.0f)
+    , m_nukeShockwaveRadius(0.0f)
+    , m_nukeShockwaveMaxRadius(0.0f)
+    , m_nukeShockwaveSpeed(0.0f)
     , m_wPressed(false)
     , m_sPressed(false)
     , m_aPressed(false)
@@ -304,10 +312,14 @@ void Game::handleEvents() {
                         case SDLK_0:
                             // Deploy NUKE bomber (special superfortress)
                             {
-                                auto bomber = m_aircraftManager.spawnBomber(-1.0f, -1.0f, 8);  // BombType::NUKE = 8
+                                // Target the CENTER of the map for maximum impact
+                                float centerX = m_windowWidth / 2.0f;
+                                float centerY = m_windowHeight / 2.0f;
+                                auto bomber = m_aircraftManager.spawnBomber(centerX, centerY, 8);  // BombType::NUKE = 8
                                 if (bomber) {
                                     bomber->setNukeBomber(true);  // 15 HP, 80% hit rate, larger size
-                                    std::cout << "0 pressed - NUKE bomber deployed! (15 HP, 80% hit rate, 5x explosion)" << std::endl;
+                                    std::cout << "0 pressed - NUKE bomber deployed! Targeting center at (" << centerX << ", " << centerY << ")" << std::endl;
+                                    std::cout << ">>> NUCLEAR STRIKE INBOUND! 15 HP, 80% hit rate, 5x explosion <<<" << std::endl;
                                 }
                             }
                             break;
@@ -709,6 +721,30 @@ void Game::handleEvents() {
 }
 
 void Game::update(float deltaTime) {
+    // Update time dilation effect (slow motion recovery)
+    if (m_timeDilationDuration > 0.0f) {
+        m_timeDilationDuration -= deltaTime;
+        
+        // Gradually speed up from 0.15x to normal over the duration
+        float progress = 1.0f - (m_timeDilationDuration / 2.5f);  // 2.5s total
+        if (progress < 0.3f) {
+            // First 30% - stay at super slow 0.15x
+            m_timeDilation = 0.15f;
+        } else {
+            // Remaining 70% - smoothly accelerate back to normal
+            float accelProgress = (progress - 0.3f) / 0.7f;
+            m_timeDilation = 0.15f + (0.85f * accelProgress * accelProgress);  // Quadratic easing
+        }
+        
+        if (m_timeDilationDuration <= 0.0f) {
+            m_timeDilation = 1.0f;  // Return to normal speed
+            m_timeDilationDuration = 0.0f;
+        }
+    }
+    
+    // Apply time dilation to deltaTime
+    float adjustedDeltaTime = deltaTime * m_timeDilation;
+    
     // Update based on game state
     if (m_gameState == GameState::MENU) {
         // No updates needed in menu
@@ -721,37 +757,37 @@ void Game::update(float deltaTime) {
     }
     
     if (m_gameState == GameState::PVP) {
-        updatePVP(deltaTime);
+        updatePVP(adjustedDeltaTime);
         return;
     }
     
     if (m_gameState == GameState::JET_FIGHTS) {
-        updateJetFights(deltaTime);
+        updateJetFights(adjustedDeltaTime);
         return;
     }
     
     // PLAYING mode update
-    m_gameTime += deltaTime;
+    m_gameTime += adjustedDeltaTime;
     
     // Update missions
     updateMissions();
     
     // Update aircraft (pass weapon manager so bombers can drop bombs)
-    m_aircraftManager.update(deltaTime, &m_weaponManager);
+    m_aircraftManager.update(adjustedDeltaTime, &m_weaponManager);
     
     // Update AAA guns - they target bombers and fighters
     for (auto& gun : m_aaaGuns) {
         if (gun && gun->isActive()) {
             auto bombers = m_aircraftManager.getActiveBombers();
             auto fighters = m_aircraftManager.getActiveFighters();
-            gun->updateTargeting(deltaTime, bombers, fighters, &m_weaponManager);
+            gun->updateTargeting(adjustedDeltaTime, bombers, fighters, &m_weaponManager);
         }
     }
     
     // Update troops
     for (auto& troop : m_playerTroops) {
         if (troop && troop->isActive()) {
-            troop->update(deltaTime);
+            troop->update(adjustedDeltaTime);
             
             // Collect bullets from troops
             auto& bullets = troop->getBullets();
@@ -779,7 +815,7 @@ void Game::update(float deltaTime) {
     
     for (auto& troop : m_enemyTroops) {
         if (troop && troop->isActive()) {
-            troop->update(deltaTime);
+            troop->update(adjustedDeltaTime);
             
             // Collect bullets from enemy troops
             auto& bullets = troop->getBullets();
@@ -793,7 +829,7 @@ void Game::update(float deltaTime) {
     // Update troop bullets
     for (auto it = m_troopBullets.begin(); it != m_troopBullets.end();) {
         if (*it && (*it)->isActive()) {
-            (*it)->update(deltaTime);
+            (*it)->update(adjustedDeltaTime);
             ++it;
         } else {
             it = m_troopBullets.erase(it);
@@ -981,12 +1017,66 @@ void Game::update(float deltaTime) {
             float scaledCraterSize = craterSize * 0.25f;
             int damage = bomb->getDamage();
             
-            // Create explosion and crater
-            m_explosionManager.createExplosion(
-                bombX, 
-                bombY, 
-                static_cast<int>(scaledCraterSize * 2)  // Explosion is larger than crater
-            );
+            // Check if this is a NUKE bomb (crater size 1600px)
+            bool isNuke = (craterSize >= 1600);
+            
+            if (isNuke) {
+                // NUCLEAR EXPLOSION - MASSIVE EFFECTS!
+                std::cout << "\n>>> NUCLEAR DETONATION! <<<" << std::endl;
+                std::cout << "Crater radius: " << scaledCraterSize << "px" << std::endl;
+                
+                // DESTROY ALL AIRCRAFT IMMEDIATELY
+                m_aircraftManager.destroyAllAircraft();
+                std::cout << ">>> ALL AIRCRAFT DESTROYED BY NUCLEAR BLAST! <<<" << std::endl;
+                
+                // START PROGRESSIVE WASTELAND SHOCKWAVE
+                m_nukeShockwaveActive = true;
+                m_nukeShockwaveX = bombX;
+                m_nukeShockwaveY = bombY;
+                m_nukeShockwaveRadius = 0.0f;
+                m_nukeShockwaveMaxRadius = scaledCraterSize * 3.0f;  // Shockwave extends 3x crater size
+                m_nukeShockwaveSpeed = 800.0f;  // Pixels per second (fast expansion)
+                
+                if (m_currentMap) {
+                    m_currentMap->setShockwavePosition(bombX, bombY, 0.0f);
+                    std::cout << ">>> WASTELAND SHOCKWAVE INITIATED <<<" << std::endl;
+                }
+                
+                // SLOW MOTION EFFECT - Shockwave so massive time slows down!
+                m_timeDilation = 0.15f;  // 15% speed (super slow motion)
+                m_timeDilationDuration = 2.5f;  // 2.5 seconds of gradual speed-up
+                std::cout << ">>> TIME DILATION ACTIVATED - SLOW MOTION! <<<" << std::endl;
+                
+                // HUGE screen shake (30 intensity for 2.5 seconds)
+                triggerScreenShake(30.0f, 2.5f);
+                
+                // Create mushroom cloud effect with multiple expanding rings
+                for (int i = 0; i < 5; i++) {
+                    m_explosionManager.createExplosion(
+                        bombX,
+                        bombY,
+                        static_cast<int>(scaledCraterSize * 2.5f * (1.0f + i * 0.3f)),  // Multiple expanding rings
+                        1.5f + i * 0.3f  // Staggered duration
+                    );
+                }
+                
+                // Extra bright flash explosion at center
+                m_explosionManager.createExplosion(
+                    bombX,
+                    bombY,
+                    static_cast<int>(scaledCraterSize * 0.5f),  // Bright core
+                    0.5f  // Quick flash
+                );
+            } else {
+                // Normal explosion
+                m_explosionManager.createExplosion(
+                    bombX, 
+                    bombY, 
+                    static_cast<int>(scaledCraterSize * 2)  // Explosion is larger than crater
+                );
+            }
+            
+            // Create crater (same for both)
             m_explosionManager.createCrater(
                 bombX,
                 bombY,
@@ -1033,13 +1123,31 @@ void Game::update(float deltaTime) {
     // Clean up inactive bombs AFTER processing explosions
     m_weaponManager.cleanupInactiveBombs();
     
+    // Update nuke shockwave expansion
+    if (m_nukeShockwaveActive) {
+        m_nukeShockwaveRadius += m_nukeShockwaveSpeed * adjustedDeltaTime;
+        
+        if (m_currentMap) {
+            m_currentMap->setShockwavePosition(m_nukeShockwaveX, m_nukeShockwaveY, m_nukeShockwaveRadius);
+        }
+        
+        // Stop shockwave when it reaches max radius
+        if (m_nukeShockwaveRadius >= m_nukeShockwaveMaxRadius) {
+            m_nukeShockwaveActive = false;
+            if (m_currentMap) {
+                m_currentMap->setWasteland(true);  // Permanent wasteland
+                std::cout << ">>> WASTELAND TRANSFORMATION COMPLETE <<<" << std::endl;
+            }
+        }
+    }
+    
     // Update explosions
-    m_explosionManager.update(deltaTime);
+    m_explosionManager.update(adjustedDeltaTime);
     
     // Game logic updates will go here
     // For now, just track that the game is updating
     static float totalTime = 0.0f;
-    totalTime += deltaTime;
+    totalTime += adjustedDeltaTime;
     
     // Print FPS and bomber count every 5 seconds
     if (static_cast<int>(totalTime) % 5 == 0 && deltaTime > 0) {
