@@ -1,6 +1,7 @@
 #include "systems/WeaponManager.h"
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 namespace BombingRun {
 
@@ -74,15 +75,14 @@ void WeaponManager::clearAllBombs() {
 }
 
 void WeaponManager::fireBullet(float x, float y, float velocityX, float velocityY, void* owner, float size) {
-    // Calculate target position from velocity (project 1 second ahead)
-    float targetX = x + velocityX;
-    float targetY = y + velocityY;
+    // Calculate angle from velocity
+    float angle = std::atan2(velocityY, velocityX);
     
-    auto bullet = std::make_unique<Bullet>(x, y, targetX, targetY, 800.0f, owner, size);
+    auto bullet = std::make_unique<Bullet>(x, y, angle, 800.0f, owner, size);
     // Note: Runway Y will be set by Game after creation if available
     m_bullets.push_back(std::move(bullet));
     
-    std::cout << "Fired bullet from (" << x << ", " << y << ") toward (" << targetX << ", " << targetY << ")" << std::endl;
+    std::cout << "Fired bullet from (" << x << ", " << y << ") at angle " << angle << std::endl;
 }
 
 void WeaponManager::clearAllBullets() {

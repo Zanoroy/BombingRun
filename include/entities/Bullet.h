@@ -15,7 +15,18 @@ class FighterJet;  // Forward declaration
 class Bullet : public GameObject {
 public:
     /**
-     * @brief Construct a bullet
+     * @brief Construct a bullet with angle
+     * @param x Starting X position
+     * @param y Starting Y position
+     * @param angle Direction angle in radians
+     * @param speed Bullet speed
+     * @param owner Pointer to the entity that fired this bullet (optional)
+     * @param size Bullet size (width and height)
+     */
+    Bullet(float x, float y, float angle, float speed = 800.0f, void* owner = nullptr, float size = 6.0f);
+    
+    /**
+     * @brief Construct a bullet with target position
      * @param x Starting X position
      * @param y Starting Y position
      * @param targetX Target X position
@@ -24,7 +35,7 @@ public:
      * @param owner Pointer to the fighter that fired this bullet (optional)
      * @param size Bullet size (width and height)
      */
-    Bullet(float x, float y, float targetX, float targetY, float speed = 800.0f, void* owner = nullptr, float size = 6.0f);
+    static Bullet* createWithTarget(float x, float y, float targetX, float targetY, float speed = 800.0f, void* owner = nullptr, float size = 6.0f);
 
     /**
      * @brief Update bullet position
@@ -67,6 +78,19 @@ public:
      * @return true if bullet can damage this fighter
      */
     bool canHit(void* fighter) const { return fighter != m_owner || m_lifetime > 0.1f; }
+    
+    /**
+     * @brief Set bullet color (for troop bullets vs jet bullets)
+     * @param r Red component (0-255)
+     * @param g Green component (0-255)
+     * @param b Blue component (0-255)
+     */
+    void setColor(int r, int g, int b) { 
+        m_colorR = r; 
+        m_colorG = g; 
+        m_colorB = b; 
+        m_customColor = true;
+    }
 
 private:
     float m_speed;              // Bullet speed
@@ -76,6 +100,12 @@ private:
     float m_maxLifetime;        // Max time before auto-removal
     float m_runwayY;            // Runway Y position for boundary checking
     void* m_owner;              // Pointer to fighter that fired this bullet (prevents self-hit)
+    
+    // Color customization for troop bullets
+    int m_colorR = 255;
+    int m_colorG = 0;
+    int m_colorB = 0;
+    bool m_customColor = false;
 };
 
 } // namespace BombingRun

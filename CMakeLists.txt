@@ -37,6 +37,7 @@ set(SOURCES
     src/entities/PlayerJet.cpp
     src/entities/PlayerControlledJet.cpp
     src/entities/Player2Jet.cpp
+    src/entities/Troops.cpp
     src/entities/Building.cpp
     src/entities/CivilianBuilding.cpp
     src/entities/MilitaryBuilding.cpp

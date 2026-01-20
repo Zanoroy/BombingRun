@@ -7,6 +7,25 @@
 **View Perspective:** Top-Down 2D
 
 ---
+## **Phase Troops: Create New Unit called Troops** (Weeks 1-2)
+**Status:** Completed ✅
+**Completion Date:** 20 January 2026
+
+- [x] Create a new unit called Troops, assign it to the number 9 key
+- [x] The Troops are controlled by the player and march to the location the player has selected
+- [x] Movement selection decided by clicking on troop group, then clicking destination
+- [x] Implement Fighting with bullets for any enemy in range
+- [x] Implement resting after traveling a certain distance
+- [x] Once in a fight they cannot leave until resolved
+- [x] Place two enemy troop groups next to the front AAA guns
+- [x] Bullets are black with white trail, not red like planes
+- [x] Troops have 10 soldiers in each group
+- [x] Each soldier has 3 HP
+- [x] After 5 shots a soldier must reload
+- [x] Soldiers shoot at different times with random delays
+
+
+
 
 ## **Phase 1: Foundation & Core Infrastructure** (Weeks 1-2)
 **Status:** Completed ✅  

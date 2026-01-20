@@ -15,6 +15,7 @@
 #include "entities/AAAGun.h"
 #include "entities/PlayerControlledJet.h"
 #include "entities/Player2Jet.h"
+#include "entities/Troops.h"
 #include "maps/Map.h"
 #include "utils/PerformanceMonitor.h"
 #include "entities/Bomb.h"
@@ -203,6 +204,13 @@ private:
     GameState m_gameState;         // Current game state
     std::string m_selectedMap;     // Selected map ("city" or "battleground")
     std::vector<std::unique_ptr<AAAGun>> m_aaaGuns;  // Anti-aircraft guns
+    
+    // Troops system
+    std::vector<std::unique_ptr<Troops>> m_playerTroops;   // Player-controlled troop groups
+    std::vector<std::unique_ptr<Troops>> m_enemyTroops;    // Enemy troop groups
+    Troops* m_selectedTroopGroup;                          // Currently selected troop group
+    bool m_troopOrderMode;                                 // Waiting for move order click
+    std::vector<std::shared_ptr<Bullet>> m_troopBullets;  // Bullets from troops
     
     // PVP mode
     std::unique_ptr<PlayerJet> m_player1Jet;

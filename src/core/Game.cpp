@@ -20,6 +20,8 @@ Game::Game()
     , m_airstrikeTargetY(0.0f)
     , m_gameState(GameState::MENU)  // Start at menu
     , m_selectedMap("battleground")  // Default to battleground
+    , m_selectedTroopGroup(nullptr)
+    , m_troopOrderMode(false)
     , m_player1Jet(nullptr)
     , m_player2Jet(nullptr)
     , m_pvpMapSize(3000)  // Large ocean map
@@ -292,6 +294,13 @@ void Game::handleEvents() {
                                       << m_weaponManager.getRemainingBombs(m_selectedBombType)
                                       << " remaining)" << std::endl;
                             break;
+                        case SDLK_9:
+                            // Spawn player troop group at mouse position
+                            if (m_playerTroops.size() < 3) {  // Max 3 player troop groups
+                                m_playerTroops.push_back(std::make_unique<Troops>(m_mouseX, m_mouseY, false));
+                                std::cout << "9 pressed - Player troops deployed at (" << m_mouseX << ", " << m_mouseY << ")" << std::endl;
+                            }
+                            break;
                     }
                 }
                 break;
@@ -437,6 +446,21 @@ void Game::handleEvents() {
                                         m_aaaGuns.push_back(std::make_unique<AAAGun>(gunX, gunY));
                                     }
                                     std::cout << "Generated " << numGuns << " AAA guns around runway (within screen bounds)" << std::endl;
+                                    
+                                    // Add 2 enemy troop groups near the first two AAA guns (front defense)
+                                    if (m_aaaGuns.size() >= 2) {
+                                        // Place near first gun
+                                        float troop1X = m_aaaGuns[0]->getX() + 40;
+                                        float troop1Y = m_aaaGuns[0]->getY() + 40;
+                                        m_enemyTroops.push_back(std::make_unique<Troops>(troop1X, troop1Y, true));
+                                        
+                                        // Place near second gun  
+                                        float troop2X = m_aaaGuns[1]->getX() - 40;
+                                        float troop2Y = m_aaaGuns[1]->getY() + 40;
+                                        m_enemyTroops.push_back(std::make_unique<Troops>(troop2X, troop2Y, true));
+                                        
+                                        std::cout << "Spawned 2 enemy troop groups near front AAA guns" << std::endl;
+                                    }
                                 }
                             }
                             
@@ -549,6 +573,11 @@ void Game::handleEvents() {
                             m_buildingsDestroyedThisGame = 0;
                             m_bombersLostThisGame = 0;
                             m_gameTime = 0.0f;
+                            m_playerTroops.clear();
+                            m_enemyTroops.clear();
+                            m_troopBullets.clear();
+                            m_selectedTroopGroup = nullptr;
+                            m_troopOrderMode = false;
                             initializeMissions();
                             
                             // Clear all entities
@@ -587,6 +616,21 @@ void Game::handleEvents() {
                                     
                                     m_aaaGuns.push_back(std::make_unique<AAAGun>(gunX, gunY));
                                 }
+                                
+                                // Add 2 enemy troop groups near the first two AAA guns (front defense)
+                                if (m_aaaGuns.size() >= 2) {
+                                    // Place near first gun
+                                    float troop1X = m_aaaGuns[0]->getX() + 40;
+                                    float troop1Y = m_aaaGuns[0]->getY() + 40;
+                                    m_enemyTroops.push_back(std::make_unique<Troops>(troop1X, troop1Y, true));
+                                    
+                                    // Place near second gun  
+                                    float troop2X = m_aaaGuns[1]->getX() - 40;
+                                    float troop2Y = m_aaaGuns[1]->getY() + 40;
+                                    m_enemyTroops.push_back(std::make_unique<Troops>(troop2X, troop2Y, true));
+                                    
+                                    std::cout << "Spawned 2 enemy troop groups near front AAA guns" << std::endl;
+                                }
                             }
                             
                             m_gameState = GameState::PLAYING;
@@ -601,25 +645,51 @@ void Game::handleEvents() {
                         }
                         
                     } else if (m_gameState == GameState::PLAYING) {
-                        // Bombing mode click handling
-                        if (m_airstrikeMode) {
-                            // Deploy airstrike at clicked position
-                            float targetX = static_cast<float>(event.button.x);
-                            float targetY = static_cast<float>(event.button.y);
-                            m_aircraftManager.deployAirstrike(targetX, targetY);
-                            m_airstrikeMode = false;  // Deactivate targeting mode
-                            std::cout << "Airstrike deployed at (" << targetX << ", " << targetY << ")" << std::endl;
-                        } else {
-                            // Normal bomber deployment
-                            float targetX = static_cast<float>(event.button.x);
-                            float targetY = static_cast<float>(event.button.y);
+                        float clickX = static_cast<float>(event.button.x);
+                        float clickY = static_cast<float>(event.button.y);
+                        
+                        // Check if in troop order mode
+                        if (m_troopOrderMode && m_selectedTroopGroup) {
+                            // Issue move order
+                            m_selectedTroopGroup->setDestination(clickX, clickY);
+                            m_troopOrderMode = false;
+                            std::cout << "Troops ordered to move to (" << clickX << ", " << clickY << ")" << std::endl;
+                        }
+                        // Check if clicking on a troop group
+                        else {
+                            bool troopSelected = false;
+                            for (auto& troop : m_playerTroops) {
+                                if (troop->containsPoint(clickX, clickY)) {
+                                    // Select this troop group
+                                    if (m_selectedTroopGroup) {
+                                        m_selectedTroopGroup->deselect();
+                                    }
+                                    m_selectedTroopGroup = troop.get();
+                                    m_selectedTroopGroup->select();
+                                    m_troopOrderMode = true;
+                                    troopSelected = true;
+                                    std::cout << "Troop group selected. Click to set destination." << std::endl;
+                                    break;
+                                }
+                            }
                             
-                            // Spawn bomber that will fly to target and drop bombs
-                            m_aircraftManager.spawnBomber(targetX, targetY, static_cast<int>(m_selectedBombType));
-                            
-                            std::cout << "Mouse clicked at: (" 
-                                      << event.button.x << ", " 
-                                      << event.button.y << ") - Spawned bomber" << std::endl;
+                            // If no troop selected, handle normal bombing
+                            if (!troopSelected) {
+                                if (m_airstrikeMode) {
+                                    // Deploy airstrike at clicked position
+                                    m_aircraftManager.deployAirstrike(clickX, clickY);
+                                    m_airstrikeMode = false;  // Deactivate targeting mode
+                                    std::cout << "Airstrike deployed at (" << clickX << ", " << clickY << ")" << std::endl;
+                                } else {
+                                    // Normal bomber deployment
+                                    // Spawn bomber that will fly to target and drop bombs
+                                    m_aircraftManager.spawnBomber(clickX, clickY, static_cast<int>(m_selectedBombType));
+                                    
+                                    std::cout << "Mouse clicked at: (" 
+                                              << clickX << ", " 
+                                              << clickY << ") - Spawned bomber" << std::endl;
+                                }
+                            }
                         }
                     }
                 }
@@ -667,6 +737,137 @@ void Game::update(float deltaTime) {
             gun->updateTargeting(deltaTime, bombers, fighters, &m_weaponManager);
         }
     }
+    
+    // Update troops
+    for (auto& troop : m_playerTroops) {
+        if (troop && troop->isActive()) {
+            troop->update(deltaTime);
+            
+            // Collect bullets from troops
+            auto& bullets = troop->getBullets();
+            for (auto& bullet : bullets) {
+                m_troopBullets.push_back(bullet);
+            }
+            troop->clearBullets();
+            
+            // Check for auto-engagement with enemy troops
+            if (!troop->isInCombat()) {
+                for (auto& enemy : m_enemyTroops) {
+                    if (enemy && enemy->isActive()) {
+                        float dist = troop->getDistanceTo(enemy.get());
+                        if (dist < 150.0f) {  // Auto-engage within range
+                            troop->engageTarget(enemy.get());
+                            enemy->engageTarget(troop.get());
+                            std::cout << "Troops engaged in combat!" << std::endl;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    for (auto& troop : m_enemyTroops) {
+        if (troop && troop->isActive()) {
+            troop->update(deltaTime);
+            
+            // Collect bullets from enemy troops
+            auto& bullets = troop->getBullets();
+            for (auto& bullet : bullets) {
+                m_troopBullets.push_back(bullet);
+            }
+            troop->clearBullets();
+        }
+    }
+    
+    // Update troop bullets
+    for (auto it = m_troopBullets.begin(); it != m_troopBullets.end();) {
+        if (*it && (*it)->isActive()) {
+            (*it)->update(deltaTime);
+            ++it;
+        } else {
+            it = m_troopBullets.erase(it);
+        }
+    }
+    
+    // Check troop bullet collisions with soldiers
+    for (auto& bullet : m_troopBullets) {
+        if (!bullet || !bullet->isActive()) continue;
+        
+        float bx = bullet->getX();
+        float by = bullet->getY();
+        bool bulletHit = false;
+        
+        // First, identify which team fired this bullet by checking position
+        bool firedByPlayer = false;
+        for (auto& troop : m_playerTroops) {
+            if (troop && troop->isActive()) {
+                float dx = troop->getX() - bx;
+                float dy = troop->getY() - by;
+                if (std::sqrt(dx*dx + dy*dy) < 200.0f) {
+                    firedByPlayer = true;
+                    break;
+                }
+            }
+        }
+        
+        // Player bullets hit enemy troops
+        if (firedByPlayer) {
+            for (auto& troop : m_enemyTroops) {
+                if (troop && troop->isActive() && !bulletHit) {
+                    std::vector<std::pair<float, float>> positions;
+                    troop->getSoldierPositions(positions);
+                    
+                    for (const auto& pos : positions) {
+                        float dx = pos.first - bx;
+                        float dy = pos.second - by;
+                        float dist = std::sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 5.0f) {  // Smaller hit radius for realism
+                            troop->damageSoldierAt(bx, by, 1);  // 1 damage per bullet
+                            bullet->markHit();
+                            bulletHit = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Enemy bullets hit player troops
+            for (auto& troop : m_playerTroops) {
+                if (troop && troop->isActive() && !bulletHit) {
+                    std::vector<std::pair<float, float>> positions;
+                    troop->getSoldierPositions(positions);
+                    
+                    for (const auto& pos : positions) {
+                        float dx = pos.first - bx;
+                        float dy = pos.second - by;
+                        float dist = std::sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 5.0f) {  // Smaller hit radius for realism
+                            troop->damageSoldierAt(bx, by, 1);  // 1 damage per bullet
+                            bullet->markHit();
+                            bulletHit = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Remove inactive troops
+    m_playerTroops.erase(
+        std::remove_if(m_playerTroops.begin(), m_playerTroops.end(),
+            [](const std::unique_ptr<Troops>& t) { return !t || !t->isActive(); }),
+        m_playerTroops.end()
+    );
+    
+    m_enemyTroops.erase(
+        std::remove_if(m_enemyTroops.begin(), m_enemyTroops.end(),
+            [](const std::unique_ptr<Troops>& t) { return !t || !t->isActive(); }),
+        m_enemyTroops.end()
+    );
     
     // Update weapons (bombs, bullets)
     m_weaponManager.update(deltaTime);
@@ -917,6 +1118,25 @@ void Game::render() {
     for (auto& gun : m_aaaGuns) {
         if (gun && gun->isActive()) {
             gun->render(m_renderer, m_font);
+        }
+    }
+    
+    // Render troops
+    for (auto& troop : m_playerTroops) {
+        if (troop && troop->isActive()) {
+            troop->render(m_renderer, m_font);
+        }
+    }
+    for (auto& troop : m_enemyTroops) {
+        if (troop && troop->isActive()) {
+            troop->render(m_renderer, m_font);
+        }
+    }
+    
+    // Render troop bullets
+    for (auto& bullet : m_troopBullets) {
+        if (bullet && bullet->isActive()) {
+            bullet->render(m_renderer, m_font);
         }
     }
     
